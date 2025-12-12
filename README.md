@@ -12,8 +12,6 @@
   npm run dev
 ```
 
-- Set `OPENAI_API_KEY` in a `.env` file for LLM integration.
-- If no key is set, the backend uses a deterministic parser for diagrams.
 
 1. For production:
 
@@ -122,17 +120,6 @@ Test_LLM is a full-stack app that turns text into clear, structured charts (flow
 5. Click "Generate" to send the request to the backend
 6. The diagram is rendered instantly using Mermaid.js
 
-
-## Architecture
-
-- **Frontend**: React (Vite, TypeScript)
-  - `App.tsx`: Main UI, handles text input, selection, diagram type, and API calls
-  - `DiagramCanvas.tsx`: Renders Mermaid diagrams
-  - `FileUpload.tsx`, `PDFViewer.tsx`: File handling and PDF preview
-- **Backend**: Node.js (Express, TypeScript)
-  - `/api/diagram`: Accepts text, diagram type, and optional instruction; builds LLM prompt and returns Mermaid code
-  - Uses OpenAI API if key is set, otherwise generates diagrams from your text using a local parser
-  - Fallback parser for offline/demo use
 ---
 
 Author: Toan Tran
