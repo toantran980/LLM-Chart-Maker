@@ -75,42 +75,6 @@ Test_LLM is a full-stack app that turns text into clear, structured charts (flow
 
 ---
 
-## Screenshots
-
-**Dark theme, main editor**
-
-![1758059781325](image/README/1758059781325.png)
-
-**Light theme, main editor**
-
-![1758059796139](image/README/1758059796139.png)
-
-**Flowchart (vertical)**
-
-![1758059807458](image/README/1758059807458.png)
-
-**Timeline Chart**
-
-![1758059814949](image/README/1758059814949.png)
-
-**Rules map** 
-
-![1758059829185](image/README/1758059829185.png)
-
-**Selection and highlight UI & Chart Rendered**
-
-![1758059836803](image/README/1758059836803.png)
-
-**Sideways/landscape flowchart layout**
-
-![1758059843956](image/README/1758059843956.png)
-
-**Color picker and highlight toolbar**
-
-![1758059853219](image/README/1758059853219.png)
-
-## Getting Started
-
 ## Usage
 
 1. Enter or paste text, or upload a file (txt, doc, pdf)
