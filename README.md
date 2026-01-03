@@ -95,7 +95,7 @@ Test_LLM is a full-stack app that turns text into clear, structured charts (flow
 
 ![1758059814949](image/README/1758059814949.png)
 
-**Rules map** 
+**Rules map**
 
 ![1758059829185](image/README/1758059829185.png)
 
@@ -122,7 +122,6 @@ Test_LLM is a full-stack app that turns text into clear, structured charts (flow
 5. Click "Generate" to send the request to the backend
 6. The diagram is rendered instantly using Mermaid.js
 
-
 ## Architecture
 
 - **Frontend**: React (Vite, TypeScript)
@@ -133,6 +132,3 @@ Test_LLM is a full-stack app that turns text into clear, structured charts (flow
   - `/api/diagram`: Accepts text, diagram type, and optional instruction; builds LLM prompt and returns Mermaid code
   - Uses OpenAI API if key is set, otherwise generates diagrams from your text using a local parser
   - Fallback parser for offline/demo use
----
-
-Author: Toan Tran
