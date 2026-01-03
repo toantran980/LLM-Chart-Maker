@@ -32,7 +32,6 @@
   npm run dev
 ```
 
-- Open the URL printed by Vite (usually [http://localhost:5173](http://localhost:5173)).
 
 1. For production:
 
