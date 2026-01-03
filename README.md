@@ -32,7 +32,6 @@
   npm run dev
 ```
 
-
 1. For production:
 
 ```pwsh
@@ -68,7 +67,7 @@ Test_LLM is a full-stack app that turns text into clear, structured charts (flow
 - Modular, extensible codebase (React + Vite + TypeScript frontend, Node.js + Express + TypeScript backend)
 - **Modern UI/UX:**
   - Redesigned layout and card UI with clear sections, subtle shadows, and rounded corners
-  - Upgraded typography and color scheme for accessibility and professional look
+  - Upgraded typography and color scheme for accessibility and a professional look
   - Polished buttons and controls with modern colors, hover/focus effects, and rounded corners
   - Enhanced responsiveness and spacing for all screen sizes
   - Subtle animations and feedback for color pickers, button presses, and diagram rendering
