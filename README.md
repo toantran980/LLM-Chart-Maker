@@ -77,6 +77,7 @@ Test_LLM is a full-stack app that turns text into clear, structured charts (flow
 
 ---
 
+<<<<<<< HEAD
 ## Screenshots
 
 **Dark theme, main editor**
@@ -113,6 +114,8 @@ Test_LLM is a full-stack app that turns text into clear, structured charts (flow
 
 ## Getting Started
 
+=======
+>>>>>>> 3bf37474b7a39e74ec4a428695ef725057c3eec3
 ## Usage
 
 1. Enter or paste text, or upload a file (txt, doc, pdf)
