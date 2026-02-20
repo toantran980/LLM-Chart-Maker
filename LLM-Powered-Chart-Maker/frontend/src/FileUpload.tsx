@@ -36,7 +36,7 @@ export default function FileUpload({ onFileLoaded }: FileUploadProps) {
       <input
         ref={inputRef}
         type="file"
-        accept=".txt,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        accept=".txt,.pdf,.doc,.docx"
         onChange={handleFileChange}
         style={{ display: 'none' }}
       />

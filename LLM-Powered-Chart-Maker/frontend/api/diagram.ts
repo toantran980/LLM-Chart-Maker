@@ -13,13 +13,13 @@ function buildPrompt(req: DiagramRequest & { direction?: string }) {
   const { text, diagramType, instruction, direction } = req;
   const dir = direction || DEFAULT_DIRECTION;
   const directive =
-    '\nYou are an assistant that converts plain English into a MERMAID diagram of type ' +
+    '\nConvert the input into a Mermaid ' +
     diagramType +
-    '. Return ONLY the mermaid diagram text (no explanation). Use the mermaid language appropriate for that type:\n- flowchart: "flowchart ' +
+    ' diagram.\n\nRules:\n- Output only Mermaid code in a fenced block:\n```mermaid\n...diagram...\n```\n- No explanations or extra text.\n- For flowchart/rules, use: flowchart ' +
     dir +
-    '" with nodes and arrows.\n- timeline: use "gantt" or a simple labeled timeline using "timeline" syntax if available (if not, use a vertical flow of time).\n- rules: produce a graph or list of conditional rules as mermaid "flowchart" nodes that show triggers and outcomes.\n\nInput text:\n' +
+    '\n- Keep output syntactically valid.\n\nInput:\n' +
     text +
-    '\n\nAlways output a syntactically valid mermaid block starting with:\n```mermaid\n...diagram...\n```\nand nothing else.\n';
+    '\n';
 
   const userInstruction = instruction ? 'User instruction: ' + instruction + '\n' : '';
   return (userInstruction + directive).trim();

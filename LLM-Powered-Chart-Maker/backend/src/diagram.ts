@@ -14,24 +14,19 @@ function buildPrompt(req: DiagramRequest & { direction?: string }) {
   const { text, diagramType, instruction, direction } = req;
   const dir = direction || DEFAULT_DIRECTION;
   const directive = `
-You are an assistant that converts plain English into a MERMAID diagram of type ${diagramType}.
-Return ONLY the mermaid diagram text (no explanation). Use the mermaid language appropriate for that type:
-- flowchart: "flowchart ${dir}" with nodes and arrows.
-- timeline: use "gantt" or a simple labeled timeline using "timeline" syntax if available (if not, use a vertical flow of time).
-- rules: produce a graph or list of conditional rules as mermaid "flowchart" nodes that show triggers and outcomes.
+Convert the input into a Mermaid ${diagramType} diagram.
 
-Input text:
-${text}
-
-If the text contains explicit time markers (dates, years), prefer timeline. 
-If the user requested "rules", convert each rule to a conditional node connected to outcomes. 
-If ambiguous, produce a flowchart with main nodes.
-
-Always output a syntactically valid mermaid block starting with:
+Rules:
+- Output only Mermaid code in a fenced block:
 \`\`\`mermaid
 ...diagram...
 \`\`\`
-and nothing else.
+- No explanations or extra text.
+- For flowchart/rules, use: flowchart ${dir}
+- Keep output syntactically valid.
+
+Input:
+${text}
 `;
 
   const userInstruction = instruction ? `User instruction: ${instruction}\n` : '';
@@ -132,7 +127,6 @@ export function fallbackDiagram(req: DiagramRequest & { direction?: string }): s
     lines.forEach((line, i) => {
       const m = line.match(/^if (.+?), (then|)(.+?)(?:, else (.+))?\.?$/i);
       if (m) {
-        // e.g. If X, then Y, else Z
         const cond = m[1].trim();
         const thenPart = m[3].trim();
         const elsePart = m[4]?.trim();

@@ -17,8 +17,6 @@ app.get('/health', (_req, res) => {
   res.json({ ok: true, fallback });
 });
 
-
-
 app.post('/api/diagram', async (req, res) => {
   const body = req.body as DiagramRequest;
   if (!body?.text || !body?.diagramType) {
