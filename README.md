@@ -12,15 +12,6 @@
   npm run dev
 ```
 
-- Set `OPENAI_API_KEY` in a `.env` file for LLM integration.
-- If no key is set, the backend uses a deterministic parser for diagrams.
-
-1. For production:
-
-```pwsh
-  npx tsc
-  node dist/index.js
-```
 
 ### Frontend (React + Vite + TypeScript)
 
@@ -32,20 +23,14 @@
   npm run dev
 ```
 
-1. For production:
-
-```pwsh
-  npm run build
-```
-
 ---
 
 ## Approach & Architecture
 
 **Approach:**
 
-- The **frontend** (React + Vite + TypeScript) lets users enter or upload text, highlight any selection (including multi-line), and choose a diagram type (flowchart, timeline, rules map). The UI is modern, responsive, and user-friendly. When a diagram is requested, the frontend sends the text, diagram type, and any instructions to the backend.
-- The **backend** (Node.js + Express + TypeScript) receives the request and builds a prompt for the LLM (OpenAI API). If the LLM is unavailable, fails, or returns an empty result, a deterministic fallback parser generates a valid Mermaid diagram from the text, ensuring a diagram is always returned.
+- The **frontend** lets users enter or upload text, highlight any selection (including multi-line), and choose a diagram type (flowchart, timeline, rules map). The UI is modern, responsive, and user-friendly. When a diagram is requested, the frontend sends the text, diagram type, and any instructions to the backend.
+- The **backend** receives the request and builds a prompt for the LLM. If the LLM is unavailable, fails, or returns an empty result, a deterministic fallback parser generates a valid Mermaid diagram from the text, ensuring a diagram is always returned.
 - **Diagrams** are rendered client-side using Mermaid.js for instant, interactive visualization.
 - The system is robust: it always returns a diagram (even if the LLM fails) and supports flexible user input through multi-line highlighting and selection.
 
