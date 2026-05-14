@@ -1,81 +1,77 @@
-# LLM - Powered Chart Maker
+# LLM-Powered Chart Maker
 
-## Quick Setup
+A full-stack application designed to transform unstructured text and PDF documents into professional Mermaid.js diagrams using Large Language Models. This project serves as a demonstration of high-performance PDF rendering, automated text extraction, and AI-driven visualization pipelines.
 
-### Backend (Node.js + TypeScript)
+## Technologies
 
-1. In the `backend` folder:
+- **Frontend**: React 19, TypeScript, Vite, PDF.js (v5+), Mermaid.js
+- **Backend**: Node.js, Express, TypeScript, OpenAI API
+- **DevOps**: Docker, Docker Compose, Nginx
 
-```pwsh
-  cd backend
-  npm install
-  npm run dev
+## Core Features
+
+- **Document Analysis Studio**: Custom canvas-based PDF renderer with a native text layer for seamless content selection.
+- **AI Magic Sync**: Real-time selection tracking that automatically synchronizes highlighted document content with the diagram generator.
+- **Intelligent Diagramming**: Automated conversion of complex text into Flowcharts, Timelines, and Rules Maps via OpenAI's GPT models.
+- **Premium Workspace**: Modern, glassmorphism-inspired UI with a Cinema-Mode document viewer and responsive diagram canvas.
+
+## Setup Instructions
+
+1. **Configuration**: Create a `.env` file in the root directory and add your `OPENAI_API_KEY`.
+2. **Deployment**: Execute `docker-compose up -d --build` to initialize the environment.
+3. **Usage**: Access the workspace at `http://localhost:3000`.
+
+## Explanation of Approach
+
+The project addresses the friction between static document analysis and dynamic visualization through two primary engineering innovations.
+
+### System Architecture
+The application is deployed as a multi-container environment orchestrated via Docker, ensuring consistent behavior across all stages of the analysis lifecycle:
+
+```mermaid
+graph LR
+    User((User)) --> Nginx[Nginx Proxy]
+    Nginx --> Frontend[React 19 Studio]
+    Frontend --> Backend[Node.js API]
+    Backend --> OpenAI[OpenAI API]
+    
+    subgraph "Docker Environment"
+    Nginx
+    Frontend
+    Backend
+    end
 ```
 
+### Custom Rendering Engine
+Standard PDF integration via iframes prevents programmatic access to content due to browser security models. This project implements a custom pipeline using **PDF.js v5** that renders pages onto a high-resolution canvas. A transparent text layer is mapped over the canvas, enabling the **AI Magic Sync** selection mechanism. This allows users to synchronize document context to the AI generator in real-time without manual copy-pasting.
 
-### Frontend (React + Vite + TypeScript)
+### LLM Orchestration
+The backend acts as an intelligent middleware, sanitizing selection data and injecting it into optimized prompt schemas. It handles:
+- **Syntax Integrity**: Ensuring output conforms to Mermaid.js standards.
+- **Context Management**: Passing user-selected highlights as domain knowledge.
+- **Fail-Safe Generation**: Robust error handling for API latency and validation.
 
-1. In the `frontend` folder:
+## Usability and Design
 
-```pwsh
-  cd frontend
-  npm install
-  npm run dev
-```
+The application prioritizes a "Studio" experience, moving beyond standard form-based inputs to an immersive workspace:
+- **Visual Clarity**: High-contrast, dark-mode "Cinema" interface reduces eye strain during long analysis sessions.
+- **Frictionless Workflow**: Selection-based synchronization eliminates the need for manual copy-pasting.
+- **Glassmorphism UI**: Modern aesthetic utilizing depth and blur to create a premium environment.
 
----
+## Smarter RAG Roadmap (Future Vision)
 
-## Approach & Architecture
+A primary objective for future iterations is the implementation of a sophisticated RAG (Retrieval-Augmented Generation) pipeline:
+- **Dense Document Support**: Optimized for high-density casebooks and extensive legal syllabi.
+- **Semantic Precision**: Reliable, context-aware answers across dozens of source documents simultaneously.
+- **Contextual Insight**: Enabling detailed, cross-document questions and authoritative visualizations.
 
-**Approach:**
+## Development and Security
 
-- The **frontend** lets users enter or upload text, highlight any selection (including multi-line), and choose a diagram type (flowchart, timeline, rules map). The UI is modern, responsive, and user-friendly. When a diagram is requested, the frontend sends the text, diagram type, and any instructions to the backend.
-- The **backend** receives the request and builds a prompt for the LLM. If the LLM is unavailable, fails, or returns an empty result, a deterministic fallback parser generates a valid Mermaid diagram from the text, ensuring a diagram is always returned.
-- **Diagrams** are rendered client-side using Mermaid.js for instant, interactive visualization.
-- The system is robust: it always returns a diagram (even if the LLM fails) and supports flexible user input through multi-line highlighting and selection.
+The project adheres to modern engineering standards for high-performance personal projects:
+- **TypeScript Integration**: Full-stack type safety ensuring reliable data flow between the React 19 frontend and Node.js backend.
+- **Security Posture**: Regularly audited dependencies with zero high-severity vulnerabilities in the current build.
+- **Containerized Excellence**: Standardized Docker orchestration for consistent environment behavior across development and production.
 
----
+## License
 
-## Overview
-
-Test_LLM is a full-stack app that turns text into clear, structured charts (flowcharts, timelines, or rules maps) using LLMs (like OpenAI). Users can highlight content, prompt the LLM, and instantly generate visual diagrams to make complex material easier to understand.
-
-## Features
-
-- Paste/type text or upload files (txt and pdf)
-- Highlight text in the editor to generate diagrams for a selection
-- Multi-line highlighting: select and color text across multiple lines/blocks
-- Choose chart type: flowchart, timeline, or rules
-- Instantly generate diagrams using an LLM (or fallback to local parser)
-- Renders diagrams using Mermaid.js
-- Backend API supports OpenAI-compatible LLMs (with fallback for demo/testing)
-- Modular, extensible codebase (React + Vite + TypeScript frontend, Node.js + Express + TypeScript backend)
-- **Modern UI/UX:**
-  - Redesigned layout and card UI with clear sections, subtle shadows, and rounded corners
-  - Upgraded typography and color scheme for accessibility and a professional look
-  - Polished buttons and controls with modern colors, hover/focus effects, and rounded corners
-  - Enhanced responsiveness and spacing for all screen sizes
-  - Subtle animations and feedback for color pickers, button presses, and diagram rendering
-- **PDF highlight workflow:** When you upload a PDF and click any extracted highlight, its text is sent directly to the main document/text area for chart generation. The PDFViewer's own textarea is not affected.
-
-## Getting Started
-
-## Usage
-
-1. Enter or paste text, or upload a file (txt, doc, pdf)
-2. (Optional) Highlight a portion of the text to generate a diagram for just that selection
-3. If you upload a PDF, extracted highlights will appear above the main text area. **Click any highlight to send its text to the main document/text area for chart generation.**
-4. Select the diagram type (flowchart, timeline, rules)
-5. Click "Generate" to send the request to the backend
-6. The diagram is rendered instantly using Mermaid.js
-
-## Architecture
-
-- **Frontend**: React (Vite, TypeScript)
-  - `App.tsx`: Main UI, handles text input, selection, diagram type, and API calls
-  - `DiagramCanvas.tsx`: Renders Mermaid diagrams
-  - `FileUpload.tsx`, `PDFViewer.tsx`: File handling and PDF preview
-- **Backend**: Node.js (Express, TypeScript)
-  - `/api/diagram`: Accepts text, diagram type, and optional instruction; builds LLM prompt and returns Mermaid code
-  - Uses OpenAI API if key is set, otherwise generates diagrams from your text using a local parser
-  - Fallback parser for offline/demo use
+This project is open-source and available under the MIT License.

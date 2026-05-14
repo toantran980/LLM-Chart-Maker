@@ -17,13 +17,16 @@ function buildPrompt(req: DiagramRequest & { direction?: string }) {
 Convert the input into a Mermaid ${diagramType} diagram.
 
 Rules:
-- Output only Mermaid code in a fenced block:
+- Output ONLY Mermaid code in a fenced block:
 \`\`\`mermaid
 ...diagram...
 \`\`\`
-- No explanations or extra text.
+- No explanations, no conversation, no markdown headers.
 - For flowchart/rules, use: flowchart ${dir}
-- Keep output syntactically valid.
+- For sequence diagrams (timeline), use: sequenceDiagram
+- IMPORTANT: If a label contains double quotes, escape them using #quot; (e.g., A["A label with #quot;quotes#quot;"]).
+- Avoid using special characters like [], (), {}, or > inside labels unless they are properly quoted.
+- Keep output syntactically valid for Mermaid version 11.
 
 Input:
 ${text}
@@ -43,15 +46,14 @@ export async function generateDiagramWithLLM(req: DiagramRequest): Promise<strin
 
   const prompt = buildPrompt(req);
 
-  // Chat completions payload (adjust model name as needed)
   const payload = {
-    model: 'gpt-4o-mini', // example; change as needed
+    model: 'gpt-4o-mini',
     messages: [
-      { role: 'system', content: 'You are a helpful assistant that produces only mermaid diagrams.' },
+      { role: 'system', content: 'You are a precise Mermaid diagram generator. You only output valid Mermaid code within markdown blocks.' },
       { role: 'user', content: prompt }
     ],
-    temperature: 0.2,
-    max_tokens: 800
+    temperature: 0.1, // Lower temperature for more consistent syntax
+    max_tokens: 1000
   };
 
   const headers = {
@@ -63,15 +65,10 @@ export async function generateDiagramWithLLM(req: DiagramRequest): Promise<strin
     choices?: { message?: { content?: string } }[];
   }
   const resp = await axios.post<OpenAIResponse>(OPENAI_API_URL, payload, { headers });
-  // The exact path depends on API used; adapt if using different endpoint
   const content = resp.data?.choices?.[0]?.message?.content;
   if (!content) throw new Error('Empty response from LLM');
-  // Ensure we return the mermaid block. If the model omitted fences, wrap.
-  if (!content.trim().startsWith('```mermaid')) {
-    // try to extract mermaid code; naive: return the whole content
-    return content;
-  }
-  return content;
+  
+  return content.trim();
 }
 
 /**
@@ -156,12 +153,18 @@ export function fallbackDiagram(req: DiagramRequest & { direction?: string }): s
   // Default: flowchart
   const nodes: string[] = [];
   const links: string[] = [];
-  lines.forEach((line, i) => {
+  
+  // Limit to first 5 lines for fallback to avoid crashing Mermaid
+  const limitedLines = lines.slice(0, 5);
+  
+  limitedLines.forEach((line, i) => {
     const id = `A${i + 1}`;
-    const label = escapeForMermaid(shorten(line, 60));
-    nodes.push(`${id}["${label}"]`);
+    // Strip any characters that might break Mermaid labels
+    const cleanLabel = escapeForMermaid(shorten(line, 40)).replace(/[\[\]\(\)\{\}]/g, '');
+    nodes.push(`${id}["${cleanLabel}"]`);
     if (i > 0) links.push(`A${i} --> ${id}`);
   });
+  
   const mermaid = `\`\`\`mermaid\n${styleDirectives}flowchart ${dir}\n${nodes.join('\n')}\n${links.join('\n')}\n\`\`\``;
   return mermaid;
 }
@@ -172,7 +175,9 @@ export function fallbackDiagram(req: DiagramRequest & { direction?: string }): s
  * replaces newline characters with spaces.
  */
 function escapeForMermaid(s: string) {
-  return s.replace(/"/g, '\\"').replace(/\n/g, ' ');
+  // Mermaid labels use #quot; for double quotes. 
+  // We also replace newlines with a space to keep it on one line in the node.
+  return s.replace(/"/g, '#quot;').replace(/\n/g, ' ');
 }
 
 /**
@@ -182,5 +187,5 @@ function escapeForMermaid(s: string) {
  */
 function shorten(s: string, n: number) {
   if (s.length <= n) return s;
-  return s.slice(0, n - 1) + '…';
+  return s.slice(0, n - 3) + '...';
 }

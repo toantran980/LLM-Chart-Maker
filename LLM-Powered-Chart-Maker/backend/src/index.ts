@@ -24,14 +24,18 @@ app.post('/api/diagram', async (req, res) => {
   }
   let mermaid = '';
   try {
+    console.log(`[AI] Requesting ${body.diagramType} diagram from LLM...`);
     mermaid = await generateDiagramWithLLM(body);
     if (!mermaid || !mermaid.trim()) {
-      // fallback if LLM returns empty
+      console.warn('[AI] LLM returned empty string, using fallback.');
       mermaid = fallbackDiagram(body);
+    } else {
+      console.log('[AI] LLM successfully generated diagram.');
     }
   } catch (err: any) {
-    console.error('Error /api/diagram:', err);
-    // fallback on any error
+    const errorMsg = err.response?.data?.error?.message || err.message;
+    console.error('[AI] LLM Error:', errorMsg);
+    console.log('[AI] Using fallback diagram due to error.');
     mermaid = fallbackDiagram(body);
   }
   return res.json({ mermaid });
