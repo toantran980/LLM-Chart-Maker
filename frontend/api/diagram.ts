@@ -40,10 +40,10 @@ ${text}
 // Call the LLM (e.g. OpenAI) to generate a mermaid diagram from the prompt
 async function generateDiagramWithLLM(req: DiagramRequest): Promise<string> {
   if (!OPENAI_API_KEY) throw new Error('OpenAI API key is missing.');
-  
+
   const prompt = buildPrompt(req);
   const payload = {
-    model: 'gpt-4o-mini',
+    model: 'gpt-5',
     messages: [
       { role: 'system', content: 'You are a precise Mermaid diagram generator. You only output valid Mermaid code within markdown blocks.' },
       { role: 'user', content: prompt }
@@ -51,7 +51,7 @@ async function generateDiagramWithLLM(req: DiagramRequest): Promise<string> {
     temperature: 0.1,
     max_tokens: 1000
   };
-  
+
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` };
   const resp = await axios.post(OPENAI_API_URL, payload, { headers });
 
