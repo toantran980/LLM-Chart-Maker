@@ -1,3 +1,4 @@
+import React from 'react';
 
 const COLORS = [
   { value: '#fff59d' },
@@ -21,22 +22,22 @@ interface FloatingColorPickerProps {
  * The component adapts its styles based on the current theme (light or dark mode).
  */
 const FloatingColorPicker: React.FC<FloatingColorPickerProps> = ({ position, onPick, showRemove, onRemove }) => {
-  // Detect dark mode
-  const isDark = typeof document !== 'undefined' && document.body.classList.contains('dark-mode');
   return (
     <div
+      className="floating-color-picker"
       style={{
         position: 'absolute',
         top: position.top,
         left: position.left,
-        background: isDark ? '#23283a' : '#fff',
-        border: isDark ? '1.5px solid #7ecfff' : '1px solid #ccc',
-        borderRadius: 6,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-        padding: 8,
+        background: 'var(--card-bg)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid var(--card-border)',
+        borderRadius: 'var(--radius-md)',
+        boxShadow: 'var(--shadow-lg)',
+        padding: '1rem',
         zIndex: 1000,
         display: 'flex',
-        gap: 10,
+        gap: '0.75rem',
         alignItems: 'center',
       }}
     >
@@ -44,43 +45,39 @@ const FloatingColorPicker: React.FC<FloatingColorPickerProps> = ({ position, onP
         <button
           key={c.value}
           onClick={() => onPick(c.value)}
+          className="color-swatch"
           style={{
             background: c.value,
-            border: isDark ? '1.5px solid #7ecfff' : '1.5px solid #0078d4',
+            border: '2px solid rgba(0,0,0,0.1)',
             borderRadius: '50%',
-            width: 18,
-            height: 18,
-            minWidth: 18,
-            minHeight: 18,
+            width: '24px',
+            height: '24px',
             padding: 0,
-            margin: 0,
             cursor: 'pointer',
-            outline: 'none',
-            display: 'inline-block',
+            transition: 'transform 0.2s ease',
           }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
           aria-label={c.value}
         />
       ))}
       {showRemove && (
         <button
           onClick={onRemove}
+          className="secondary"
           style={{
-            background: isDark ? '#23283a' : '#fff',
-            color: isDark ? '#7ecfff' : '#0078d4',
-            border: isDark ? '1.5px solid #7ecfff' : '1.5px solid #0078d4',
-            borderRadius: 4,
-            padding: '2px 10px',
-            marginLeft: 8,
-            fontWeight: 600,
-            fontSize: '0.95rem',
-            cursor: 'pointer',
-            outline: 'none',
-            transition: 'background 0.2s, color 0.2s, border 0.2s',
+            padding: '0.4rem 0.8rem',
+            fontSize: '0.8rem',
+            borderRadius: 'var(--radius-sm)',
+            marginLeft: '0.5rem'
           }}
-        >Remove</button>
+        >
+          Clear
+        </button>
       )}
     </div>
   );
 };
+
 
 export default FloatingColorPicker;

@@ -8,54 +8,68 @@ const DEFAULT_DIRECTION = 'TD';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
 
-// Build the prompt to send to the LLM based on the request
+/**
+ * Build a prompt to send to the LLM. The LLM should return a mermaid diagram string only.
+ */
 function buildPrompt(req: DiagramRequest & { direction?: string }) {
   const { text, diagramType, instruction, direction } = req;
   const dir = direction || DEFAULT_DIRECTION;
-  const directive =
-    '\nConvert the input into a Mermaid ' +
-    diagramType +
-    ' diagram.\n\nRules:\n- Output only Mermaid code in a fenced block:\n```mermaid\n...diagram...\n```\n- No explanations or extra text.\n- For flowchart/rules, use: flowchart ' +
-    dir +
-    '\n- Keep output syntactically valid.\n\nInput:\n' +
-    text +
-    '\n';
+  const directive = `
+Convert the input into a Mermaid ${diagramType} diagram.
 
-  const userInstruction = instruction ? 'User instruction: ' + instruction + '\n' : '';
-  return (userInstruction + directive).trim();
+Rules:
+- Output ONLY Mermaid code in a fenced block:
+\`\`\`mermaid
+...diagram...
+\`\`\`
+- No explanations, no conversation, no markdown headers.
+- For flowchart/rules, use: flowchart ${dir}
+- For sequence diagrams (timeline), use: sequenceDiagram
+- IMPORTANT: If a label contains double quotes, escape them using #quot; (e.g., A["A label with #quot;quotes#quot;"]).
+- Avoid using special characters like [], (), {}, or > inside labels unless they are properly quoted.
+- Keep output syntactically valid for Mermaid version 11.
+
+Input:
+${text}
+`;
+
+  const userInstruction = instruction ? `User instruction: ${instruction}\n` : '';
+  return `${userInstruction}${directive}`.trim();
 }
 
 // Call the LLM (e.g. OpenAI) to generate a mermaid diagram from the prompt
 async function generateDiagramWithLLM(req: DiagramRequest): Promise<string> {
   if (!OPENAI_API_KEY) throw new Error('OpenAI API key is missing.');
+  
   const prompt = buildPrompt(req);
   const payload = {
-    model: 'gpt-4o-mini', // change to your desired model
+    model: 'gpt-4o-mini',
     messages: [
-      { role: 'system', content: 'You are a helpful assistant that produces only mermaid diagrams.' },
+      { role: 'system', content: 'You are a precise Mermaid diagram generator. You only output valid Mermaid code within markdown blocks.' },
       { role: 'user', content: prompt }
     ],
-    temperature: 0.2,
-    max_tokens: 800
+    temperature: 0.1,
+    max_tokens: 1000
   };
+  
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` };
   const resp = await axios.post(OPENAI_API_URL, payload, { headers });
 
-  // Fix: Assert the response type so TypeScript knows about .choices
-  type OpenAIResponse = { choices: { message?: { content: string }, text?: string }[] };
-  const choices = (resp.data as OpenAIResponse).choices;
-  const content = (choices?.[0]?.message?.content) || choices?.[0]?.text;
+  interface OpenAIResponse {
+    choices?: { message?: { content?: string } }[];
+  }
+  const content = (resp.data as OpenAIResponse).choices?.[0]?.message?.content;
   if (!content) throw new Error('Empty response from LLM');
-  return content;
+  return content.trim();
 }
 
 function escapeForMermaid(s: string) {
-  return s.replace(/"/g, '\\"').replace(/\n/g, ' ');
+  return s.replace(/"/g, '#quot;').replace(/\n/g, ' ');
 }
 
 function shorten(s: string, n: number) {
   if (s.length <= n) return s;
-  return s.slice(0, n - 1) + '…';
+  return s.slice(0, n - 3) + '...';
 }
 
 /**
@@ -131,9 +145,9 @@ function fallbackDiagram(req: DiagramRequest & { direction?: string }): string {
   const links: string[] = [];
   lines.forEach((line, idx) => {
     const id = `A${idx + 1}`;
-    const label = escapeForMermaid(shorten(line, 60));
-    nodes.push(`${id}["${label}"]`);
-    if (idx > 0) links.push(`A${idx - 1} --> ${id}`);
+    const cleanLabel = escapeForMermaid(shorten(line, 40)).replace(/[\[\]\(\)\{\}]/g, '');
+    nodes.push(`${id}["${cleanLabel}"]`);
+    if (idx > 0) links.push(`A${idx} --> ${id}`);
   });
   const mermaid = `\`\`\`mermaid\n${styleDirectives}flowchart ${dir}\n${nodes.join('\n')}\n${links.join('\n')}\n\`\`\``;
   return mermaid;

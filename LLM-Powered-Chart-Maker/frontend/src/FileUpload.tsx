@@ -22,7 +22,6 @@ export default function FileUpload({ onFileLoaded }: FileUploadProps) {
       }
     };
     if (file.type === 'application/pdf') {
-      // For PDF, just pass the file for now (viewing handled elsewhere)
       onFileLoaded('', file);
     } else {
       reader.readAsText(file);
@@ -30,8 +29,12 @@ export default function FileUpload({ onFileLoaded }: FileUploadProps) {
   }
 
   return (
-    <label className="custom-file-upload modern-upload-btn" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10, padding: '10px 22px', border: '2px solid #0096e6', borderRadius: 8, background: '#f7fafc', color: '#0096e6', fontWeight: 600, fontSize: '1.08rem', boxShadow: '0 2px 8px 0 rgba(0,150,230,0.08)', transition: 'background 0.2s, color 0.2s, border 0.2s' }}>
-      <svg width="20" height="20" fill="none" stroke="#0096e6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    <label className="modern-upload-btn">
+      <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+      </svg>
       <span>Upload File</span>
       <input
         ref={inputRef}
@@ -43,3 +46,4 @@ export default function FileUpload({ onFileLoaded }: FileUploadProps) {
     </label>
   );
 }
+

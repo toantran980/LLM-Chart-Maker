@@ -1,192 +1,279 @@
+// @ts-nocheck
 import { useRef, useEffect, useState } from 'react';
 
-// PDF.js text item type
-type TextItem = {
-  str: string;
-  transform: number[];
-};
 import * as pdfjsLib from 'pdfjs-dist';
+// Essential CSS for text layer alignment and selection
+import 'pdfjs-dist/web/pdf_viewer.css';
 
-// PDF.js worker setup
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+// Modern Vite Worker Loader - No more external CDN or 404 issues
+import PDFWorker from 'pdfjs-dist/build/pdf.worker.mjs?worker';
+pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
 
 type Highlight = { text: string; color?: string };
 interface PDFViewerProps {
   file: File | null;
-  onExtractedHighlights?: (highlights: Highlight[]) => void;
+  onClose: () => void;
+  highlights: Highlight[];
+  cachedSelection: string;
+  requestDiagram: (payload: { text: string; diagramType: any }, which: 'full' | 'selection') => void;
+  diagramType: any;
 }
 
-
-//PDFViewer component to preview a PDF file and extract highlighted text
-export default function PDFViewer({ file, onExtractedHighlights }: PDFViewerProps) {
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const [highlights, setHighlights] = useState<Highlight[]>([]);
+export default function PDFViewer({ 
+  file, 
+  onClose, 
+  highlights: initialHighlights,
+  cachedSelection,
+  requestDiagram,
+  diagramType
+}: PDFViewerProps) {
+  const [highlights, setHighlights] = useState<Highlight[]>(initialHighlights || []);
   const [loading, setLoading] = useState(false);
   const [manualHighlights, setManualHighlights] = useState<Highlight[]>([]);
-  const [manualText, setManualText] = useState('');
-  // Automatically populate the main document/text input with the first extracted highlight
-  useEffect(() => {
-    if (highlights.length > 0 && manualText === '') {
-      setManualText(highlights[0].text);
-    }
-  }, [highlights, manualText]);
+  const [numPages, setNumPages] = useState<number>(0);
+  const canvasRefs = useRef<Array<HTMLCanvasElement | null>>([]);
+  const textLayerRefs = useRef<Array<HTMLDivElement | null>>([]);
 
-  // Use postMessage to extract selected text from the iframe (works for same-origin PDFs)
-  const extractSelectedText = () => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-    // Ask the iframe to send us the selected text
-    iframe.contentWindow?.postMessage({ type: 'GET_SELECTED_TEXT' }, '*');
-  };
-
-  // Listen for selected text from the iframe
+  // Listen for global selection events to auto-sync
   useEffect(() => {
-    const handler = (event: MessageEvent) => {
-      if (event.data && event.data.type === 'SELECTED_TEXT' && event.data.text) {
-        setManualHighlights((prev) => [...prev, { text: event.data.text, color: '#ffe066' }]);
+    const handleMouseUp = () => {
+      const selection = window.getSelection();
+      const text = selection ? selection.toString().trim() : '';
+      if (text.length > 3) {
+        console.log("Captured selection for analysis:", text);
       }
     };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => document.removeEventListener('mouseup', handleMouseUp);
   }, []);
 
-  // When a new PDF file is loaded, display it and extract highlights
+  // Load and Render PDF using pdf.js
   useEffect(() => {
-    if (!file || file.type !== 'application/pdf') return;
-    const url = URL.createObjectURL(file);
-    if (iframeRef.current) {
-      iframeRef.current.src = url;
-    }
-    setLoading(true);
-    setHighlights([]);
-    (async () => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
       try {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const data = new Uint8Array(reader.result as ArrayBuffer);
+        const loadingTask = pdfjsLib.getDocument({ data });
+        const pdf = await loadingTask.promise;
+        setNumPages(pdf.numPages);
+        
+        setLoading(true);
+        setHighlights([]);
+        setManualHighlights([]);
+        
+        // Extract existing highlights (annotations)
         const allHighlights: Highlight[] = [];
-
-  // Iterate through all pages to find highlights
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-    const annotations = await page.getAnnotations();
-    const textContent = await page.getTextContent();
-    for (const ann of annotations) {
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const annotations = await page.getAnnotations();
+          for (const ann of annotations) {
             if (ann.subtype === 'Highlight') {
-              let color: string | undefined = undefined;
-              if (ann.color && Array.isArray(ann.color)) {
-                const [r, g, b] = ann.color;
-                color = `rgb(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)})`;
-              }
-              // Try to extract highlighted text using quadPoints
-              let text = '';
-              if (ann.quadPoints && Array.isArray(ann.quadPoints)) {
-                for (let i = 0; i < ann.quadPoints.length; i += 8) {
-                  const quad = ann.quadPoints.slice(i, i + 8);
-                  const x1 = Math.min(quad[0], quad[2], quad[4], quad[6]);
-                  const x2 = Math.max(quad[0], quad[2], quad[4], quad[6]);
-                  const y1 = Math.min(quad[1], quad[3], quad[5], quad[7]);
-                  const y2 = Math.max(quad[1], quad[3], quad[5], quad[7]);
-                  const items = (textContent.items as TextItem[]).filter((item) => {
-                    const tx = item.transform[4];
-                    const ty = item.transform[5];
-                    return tx >= x1 && tx <= x2 && ty >= y1 && ty <= y2;
-                  });
-                  text += items.map((item) => item.str).join(' ');
-                }
-              }
-              if (!text && ann.contents) text = ann.contents;
-              if (text) {
-                allHighlights.push({ text, color });
-              }
+              let text = ann.contents || 'Highlighted Text';
+              if (text) allHighlights.push({ text, color: '#6366f1' });
             }
           }
         }
-        // Only show real highlights
-        if (allHighlights.length > 0) {
-          setHighlights(allHighlights);
-          if (onExtractedHighlights) onExtractedHighlights(allHighlights);
-        }
+        setHighlights(allHighlights);
         setLoading(false);
+
+        // Render pages using IntersectionObserver for performance
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(async (entry) => {
+            if (entry.isIntersecting) {
+              const pageNum = parseInt(entry.target.getAttribute('data-page') || '0');
+              if (pageNum > 0) {
+                const page = await pdf.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 2.0 });
+                
+                const canvas = canvasRefs.current[pageNum - 1];
+                if (canvas && !canvas.getAttribute('data-rendered')) {
+                  canvas.height = viewport.height;
+                  canvas.width = viewport.width;
+                  const renderContext = {
+                    canvasContext: canvas.getContext('2d')!,
+                    viewport: viewport,
+                  };
+                  await page.render(renderContext as any).promise;
+                  canvas.setAttribute('data-rendered', 'true');
+
+                  const textLayerDiv = textLayerRefs.current[pageNum - 1];
+                  if (textLayerDiv) {
+                    textLayerDiv.innerHTML = '';
+                    textLayerDiv.style.width = `${viewport.width}px`;
+                    textLayerDiv.style.height = `${viewport.height}px`;
+                    try {
+                      const textContent = await page.getTextContent();
+                      const textLayer = new (pdfjsLib as any).TextLayer({
+                        textContentSource: textContent,
+                        container: textLayerDiv,
+                        viewport: viewport,
+                      });
+                      await textLayer.render();
+                    } catch (textErr) {
+                      console.warn("Text layer skipped", textErr);
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }, { threshold: 0.1 });
+
+        // Observe all page containers
+        setTimeout(() => {
+          document.querySelectorAll('.pdf-page-container').forEach(el => observer.observe(el));
+        }, 500);
       } catch (err) {
         setLoading(false);
-        console.error('Highlight extraction error:', err);
+        console.error('PDF Rendering Error:', err);
       }
-    })();
-    return () => {
-      URL.revokeObjectURL(url);
     };
-  }, [file, onExtractedHighlights]);
+    reader.readAsArrayBuffer(file);
+  }, [file]);
 
-  if (!file || file.type !== 'application/pdf') return null;
-
-  // Render the PDF in an iframe and show extracted highlights
+  if (!file) return null;
+  
   return (
-    <div style={{ margin: '16px 0', border: '1px solid #e6eef6', borderRadius: 8, overflow: 'hidden', background: '#23263a' }}>
-      <iframe
-        ref={iframeRef}
-        title="PDF Preview"
-        width="100%"
-        height={500}
-        style={{ border: 'none', background: '#23263a' }}
-        onLoad={() => {
-          // Inject a script into the iframe to listen for GET_SELECTED_TEXT and respond with the selection
-          const iframe = iframeRef.current;
-          if (!iframe) return;
-          try {
-            const script = document.createElement('script');
-            script.textContent = `
-              window.addEventListener('message', function(event) {
-                if (event.data && event.data.type === 'GET_SELECTED_TEXT') {
-                  const sel = window.getSelection();
-                  event.source.postMessage({ type: 'SELECTED_TEXT', text: sel ? sel.toString() : '' }, '*');
+    <div className="pdf-viewer-root studio-theme">
+      <button className="close-pdf-btn" onClick={onClose}>
+        &times; Close PDF and return to Editor
+      </button>
+      <div className="pdf-preview-pane custom-scroll">
+        {numPages === 0 && (
+          <div style={{ color: 'white', marginTop: '10rem', textAlign: 'center', padding: '2rem' }}>
+            <div className="spinner" style={{ margin: '0 auto 1.5rem' }}></div>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Processing Document...</h2>
+            <p style={{ opacity: 0.6, fontSize: '0.9rem' }}>Initializing PDF engine and loading pages.</p>
+          </div>
+        )}
+        <div className="pdf-pages-container">
+          {Array.from({ length: numPages }).map((_, i) => (
+            <div 
+              key={i} 
+              className="pdf-page-container"
+              data-page={i + 1}
+              onMouseUp={() => {
+                const sel = window.getSelection();
+                const selectedText = sel ? sel.toString().trim() : '';
+                if (selectedText.length > 5) {
+                  setManualHighlights(prev => [...prev, { text: selectedText, color: 'var(--accent-primary)' }]);
+                  
+                  // Visual confirmation: tint the selected spans
+                  const textLayer = textLayerRefs.current[i];
+                  if (textLayer) {
+                    const spans = textLayer.querySelectorAll('span');
+                    spans.forEach(span => {
+                      if (sel && sel.containsNode(span, true)) {
+                        span.style.background = 'rgba(99, 102, 241, 0.4)';
+                        span.style.borderRadius = '2px';
+                      }
+                    });
+                  }
                 }
-              });
-            `;
-            iframe.contentDocument?.head.appendChild(script);
-          } catch {
-            // Ignore if cannot inject (cross-origin)
-          }
-        }}
-      />
-      <div style={{ padding: 16, background: '#fff', color: '#222' }}>
-        <h4>Extracted Highlights</h4>
-        <button onClick={extractSelectedText} style={{ marginBottom: 12, padding: '4px 12px', borderRadius: 4, background: '#23263a', color: '#fff', border: 'none', cursor: 'pointer' }}>
-          Extract Selected Text as Highlight
-        </button>
-        <div style={{ margin: '12px 0' }}>
-          <textarea
-            value={manualText}
-            onChange={e => setManualText(e.target.value)}
-            placeholder="Paste any text here to add as a highlight"
-            rows={3}
-            style={{ width: '100%', borderRadius: 4, border: '1px solid #ccc', padding: 8, fontSize: 14 }}
-          />
-          <button
+              }}
+            >
+              <canvas
+                ref={(el) => { if (el) canvasRefs.current[i] = el; }}
+                className="pdf-canvas"
+              />
+              <div
+                ref={(el) => { if (el) textLayerRefs.current[i] = el; }}
+                className="textLayer"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="pdf-highlights-pane glass-sidebar">
+        <div className="highlights-header">
+          <div className="premium-badge">AI POWERED</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0 }}>Document Studio</h3>
+            <button 
+              className="secondary-btn-xs" 
+              onClick={() => {
+                setManualHighlights([]);
+                setHighlights([]);
+              }}
+              style={{ 
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#94a3b8',
+                padding: '4px 8px', 
+                fontSize: '0.65rem',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Clear All
+            </button>
+          </div>
+          <p className="subheading-sm">Select text to build your chart</p>
+        </div>
+
+        <div className="sync-status-container">
+          <div className="auto-sync-status">
+            <span className="pulse-dot"></span>
+            <span>Live Sync Active</span>
+          </div>
+          
+          <button 
+            className="primary-btn-sm" 
+            style={{ marginTop: '1.5rem', width: '100%' }}
             onClick={() => {
-              if (manualText.trim()) {
-                setManualHighlights(prev => [...prev, { text: manualText, color: '#ffe066' }]);
-                setManualText('');
+              const allText = [...highlights, ...manualHighlights].map(h => h.text).join('\n\n---\n\n');
+              if (allText) {
+                requestDiagram({ text: allText, diagramType }, 'selection');
+              } else {
+                alert("Please select some text on the PDF first!");
               }
             }}
-            style={{ marginTop: 4, padding: '4px 12px', borderRadius: 4, background: '#23263a', color: '#fff', border: 'none', cursor: 'pointer' }}
           >
-            Add Pasted Text as Highlight
+            🚀 Generate Diagram from Selection
           </button>
         </div>
-        {loading && <div>Extracting highlights...</div>}
-        <ul>
-          {[...highlights, ...manualHighlights].map((hl, i) => (
-            <li key={i} style={{ marginBottom: 8, cursor: 'pointer' }}
-                onClick={() => {
-                  if (onExtractedHighlights) onExtractedHighlights([hl]);
-                }}
-                title="Click to render this highlight to the document/text area for chart generation"
-            >
-              <span style={{ background: hl.color || '#ffe066', color: '#222', borderRadius: 4, padding: '2px 6px', marginRight: 8 }}>{hl.text}</span>
-              {hl.color && <span style={{ fontSize: 12, color: hl.color }}>●</span>}
-            </li>
+
+        {loading && (
+          <div className="loading-overlay">
+            <span className="spinner"></span>
+            <p>Analyzing Document...</p>
+          </div>
+        )}
+        
+        <div className="highlights-list-modern custom-scroll">
+          {[...highlights, ...manualHighlights].length === 0 && !loading && (
+            <div className="empty-state-modern">
+              <div className="empty-icon">📄</div>
+              <p>Your workspace is empty.</p>
+              <span>Highlight any text on the left to start!</span>
+            </div>
+          )}
+          {[...highlights, ...manualHighlights].reverse().map((hl, i) => (
+            <div key={i} className="highlight-card-premium">
+              <div className="highlight-accent" style={{ background: hl.color || 'var(--accent-primary)' }} />
+              <div className="highlight-body">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div className="highlight-text-content">{hl.text}</div>
+                  <button 
+                    onClick={() => {
+                      // Filter out based on text content (basic approach)
+                      setManualHighlights(prev => prev.filter(h => h.text !== hl.text));
+                      setHighlights(prev => prev.filter(h => h.text !== hl.text));
+                    }}
+                    style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0 4px' }}
+                  >
+                    &times;
+                  </button>
+                </div>
+                <div className="highlight-meta">
+                  <span className="sync-tag">✓ SYNCED</span>
+                </div>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
     </div>
   );

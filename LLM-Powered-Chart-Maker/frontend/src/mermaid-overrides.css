@@ -1,16 +1,45 @@
-/* Mermaid diagram arrow/line color override for both light and dark mode */
+/* Mermaid diagram premium overrides */
 .mermaid svg {
-  background: #fff !important;
+  background: transparent !important;
+  font-family: var(--font-main) !important;
 }
-.mermaid svg .edgePath path,
-.mermaid svg .arrowheadPath {
-  stroke: #0096e6 !important;
-  fill: #0096e6 !important;
+
+/* Make nodes look like premium cards */
+.mermaid .node rect,
+.mermaid .node circle,
+.mermaid .node polygon,
+.mermaid .node path {
+  fill: #6366f1 !important;
+  stroke: #4338ca !important;
+  stroke-width: 2px !important;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+/* Modern smooth edges */
+.mermaid .edgePath .path {
+  stroke: #818cf8 !important;
   stroke-width: 2.5px !important;
-  opacity: 1 !important;
+  opacity: 0.8;
 }
-.mermaid svg .edgeLabel {
-  fill: #0096e6 !important;
+
+.mermaid .arrowheadPath {
+  fill: #818cf8 !important;
+  stroke: none !important;
+}
+
+/* Premium edge labels */
+.mermaid .edgeLabel {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(4px);
+  border-radius: 4px;
+  padding: 2px 6px !important;
+  color: #4338ca !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+}
+
+/* Label text polish */
+.mermaid .node .label {
+  color: white !important;
   font-weight: 600 !important;
-  opacity: 1 !important;
 }
