@@ -1,47 +1,81 @@
-# LLM-Powered Chart Maker
+# LLM Chart Maker
 
-A sophisticated Document Analysis Studio that transforms unstructured PDF content into professional Mermaid.js diagrams using AI. Built for researchers and engineers who need to visualize complex information instantly.
+LLM Chart Maker is a full-stack app for turning document content into Mermaid diagrams with the help of an LLM. Users can upload a PDF, select relevant text, and generate structured diagrams from their highlights.
 
-## 🚀 Key Features
+## Features
 
-- **Custom PDF Studio**: High-performance rendering with a native text layer for precise selection.
-- **AI Research Bin**: Collect multiple snippets from across your document to build complex, context-aware charts.
-- **Pro Export Suite**: Instant high-res **PNG** and **SVG** downloads for professional use.
-- **Enterprise Performance**: Lazy-loading engine designed to handle massive 100+ page documents with zero lag.
-- **Modern UI**: Immersive dark-mode interface with glassmorphism aesthetics.
+- Upload and view PDF documents in the browser
+- Highlight or select text snippets from the document
+- Build a diagram from one or more collected snippets
+- Generate Mermaid diagrams through a backend AI workflow
+- Preview and copy the generated diagram output
 
-## 📋 System Overview
+## Tech Stack
 
-The project addresses the friction between static document analysis and dynamic visualization through three primary engineering innovations:
+- Frontend: React, TypeScript, Vite, Mermaid, PDF.js
+- Backend: Express, TypeScript, Axios
+- Shared contracts: TypeScript types in the shared folder
 
-### 1. High-Resolution Rendering Engine
-Standard PDF integration (via iframes) prevents programmatic access to content. This project implements a custom pipeline using **PDF.js v5** that renders pages onto a high-resolution canvas. 
-- **Lazy Loading**: Implements `IntersectionObserver` logic to only render pages in the viewport, maintaining a low memory footprint even for massive documents.
-- **Vite Worker Injection**: Uses native Vite worker loaders to run the rendering engine in a dedicated background thread, ensuring a lag-free UI.
+## Requirements
 
-### 2. AI Research Bin & Context Pooling
-Unlike standard "chat with PDF" apps, this studio allows for **non-linear document analysis**.
-- **Context Pooling**: Users can collect disparate snippets from multiple pages into a "Research Bin."
-- **Multi-Snippet Synthesis**: The AI synthesizes the *entire* collection of highlights into a single, cohesive visualization, rather than just reacting to the last selection.
+- Node.js 18+
+- npm
+- An OpenAI API key for full AI generation mode
 
-### 3. LLM Orchestration
-The backend acts as an intelligent middleware, sanitizing selection data and injecting it into optimized prompt schemas.
-- **Syntax Integrity**: Automated validation to ensure output conforms to Mermaid.js standards.
-- **Fail-Safe Generation**: Robust error handling for API latency and multi-modal validation.
+## Setup
 
-## ⚙️ Setup & Deployment
+1. Install dependencies from the project root:
 
-1. **API Key**: Create a `.env` file in the root directory and add your `OPENAI_API_KEY`.
-2. **Launch**: Execute `docker-compose up -d --build` to initialize the full-stack environment.
-3. **Usage**: Access the immersive workspace at `http://localhost:3000`.
+```bash
+npm install
+```
 
-## 🚀 Future Vision: Advanced RAG Pipeline
+2. Create a `.env` file in the project root with your API key:
 
-A primary objective for future iterations is the implementation of a sophisticated RAG (Retrieval-Augmented Generation) pipeline:
-- **Generalized Dense Document Support**: Optimized for high-density technical manuals, academic whitepapers, and extensive multi-page reports.
-- **Semantic Precision**: Reliable, context-aware answers across dozens of source documents simultaneously using vector embeddings.
-- **Cross-Document Synthesis**: Enabling detailed, multi-source questions and authoritative visualizations that pull data from an entire library of PDFs.
+```env
+OPENAI_API_KEY=your_openai_api_key
+```
 
-## 📜 License
+Optional:
+
+```env
+OPENAI_API_URL=https://api.openai.com/v1/chat/completions
+```
+
+3. Start the app in development mode:
+
+```bash
+npm run dev
+```
+
+This starts both services in parallel:
+
+- Frontend: http://localhost:5173
+- Backend: http://localhost:4000
+
+The backend also exposes a health check at http://localhost:4000/health.
+
+## Docker
+
+You can also run the project with Docker:
+
+```bash
+docker compose up --build
+```
+
+Then open the frontend at http://localhost.
+
+## Available Scripts
+
+- `npm run dev` — start frontend and backend together
+- `npm run build` — build the full app
+- `npm run test` — run backend tests
+- `npm run frontend:lint` — lint the frontend
+
+## Notes
+
+If no OpenAI API key is present, the backend can still start in fallback mode and use its local parser behavior.
+
+## License
 
 This project is available under the MIT License.

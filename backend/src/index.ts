@@ -3,14 +3,12 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import bodyParser from 'body-parser';
-import { generateDiagramWithLLM } from './diagram';
+import { generateDiagram } from './diagram';
 import { DiagramRequest } from './types';
-import { fallbackDiagram } from './diagram';
 
 const app = express();
 app.use(cors({ origin: true }));
-app.use(bodyParser.json({ limit: '1mb' }));
+app.use(express.json({ limit: '1mb' }));
 
 app.get('/health', (_req, res) => {
   const fallback = !process.env.OPENAI_API_KEY;
@@ -22,22 +20,8 @@ app.post('/api/diagram', async (req, res) => {
   if (!body?.text || !body?.diagramType) {
     return res.status(400).json({ error: 'Missing text or diagramType' });
   }
-  let mermaid = '';
-  try {
-    console.log(`[AI] Requesting ${body.diagramType} diagram from LLM...`);
-    mermaid = await generateDiagramWithLLM(body);
-    if (!mermaid || !mermaid.trim()) {
-      console.warn('[AI] LLM returned empty string, using fallback.');
-      mermaid = fallbackDiagram(body);
-    } else {
-      console.log('[AI] LLM successfully generated diagram.');
-    }
-  } catch (err: any) {
-    const errorMsg = err.response?.data?.error?.message || err.message;
-    console.error('[AI] LLM Error:', errorMsg);
-    console.log('[AI] Using fallback diagram due to error.');
-    mermaid = fallbackDiagram(body);
-  }
+
+  const mermaid = await generateDiagram(body);
   return res.json({ mermaid });
 });
 

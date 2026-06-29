@@ -1,9 +1,10 @@
+import type { DiagramType } from '@shared/types';
+
 export function getApiBase(): string {
-  // In production (Docker) and development with a proxy, relative paths work best.
-  return '';
+  return (import.meta.env.VITE_API_BASE ?? '').replace(/\/$/, '');
 }
 
-export type DiagramPayload = { text: string; diagramType: string; instruction?: string };
+export type DiagramPayload = { text: string; diagramType: DiagramType; instruction?: string };
 
 // Post a diagram generation request to the backend API
 export async function postDiagram(payload: DiagramPayload) {

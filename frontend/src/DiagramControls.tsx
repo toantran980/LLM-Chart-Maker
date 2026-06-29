@@ -1,6 +1,5 @@
 import type { RefObject } from 'react';
-
-type DiagramType = 'flowchart' | 'timeline' | 'rules';
+import type { DiagramType } from '@shared/types';
 
 interface DiagramControlsProps {
   diagramType: DiagramType;

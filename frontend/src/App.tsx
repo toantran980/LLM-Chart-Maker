@@ -11,7 +11,7 @@ import Controls from './components/Controls';
 import Result from './components/Result';
 import PDFViewer from './PDFViewer';
 
-type DiagramType = 'flowchart' | 'timeline' | 'rules';
+import type { DiagramType } from '@shared/types';
 
 
 

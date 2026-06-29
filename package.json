@@ -1,9 +1,22 @@
 {
-  "devDependencies": {
-    "ts-node": "^10.9.2"
+  "name": "llm-chart-maker",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "npm-run-all --parallel backend:dev frontend:dev",
+    "build": "npm run backend:build && npm run frontend:build",
+    "test": "npm run backend:test",
+    "backend:dev": "cd backend && npm run dev",
+    "backend:test": "cd backend && npm test",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "frontend:lint": "cd frontend && npm run lint"
   },
-  "dependencies": {
-    "dotenv": "^17.2.2",
-    "pdfjs-dist": "^5.4.149"
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
   }
 }

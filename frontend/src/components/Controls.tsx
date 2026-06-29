@@ -1,8 +1,9 @@
 import FileUpload from '../FileUpload';
+import type { DiagramType } from '@shared/types';
 
 interface Props {
-  diagramType: string;
-  setDiagramType: (t: any) => void;
+  diagramType: DiagramType;
+  setDiagramType: (t: DiagramType) => void;
   onGenerateFull: () => void;
   onGenerateSelection: () => void;
   loadingFull: boolean;
@@ -28,7 +29,7 @@ export default function Controls({
           <label className="small-section">Diagram Type</label>
           <select
             value={diagramType}
-            onChange={(e) => setDiagramType(e.target.value)}
+            onChange={(e) => setDiagramType(e.target.value as DiagramType)}
             className="modern-select"
           >
             <option value="flowchart">📊 Flowchart</option>

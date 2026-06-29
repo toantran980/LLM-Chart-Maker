@@ -3,28 +3,30 @@ FROM node:24-alpine AS build
 
 WORKDIR /app
 
-# Copy package files and install all dependencies (including devDependencies required for tsc)
-COPY package*.json ./
-RUN npm install
+# Copy backend package files and install all dependencies (including devDependencies required for tsc)
+COPY backend/package*.json ./backend/
+RUN npm --prefix backend install
 
-# Copy source code and tsconfig
-COPY tsconfig.json ./
-COPY src/ ./src/
+# Copy backend source, tsconfig, and shared types
+COPY backend/tsconfig.json ./backend/
+COPY backend/src/ ./backend/src/
+COPY shared/ ./shared/
 
 # Build the TypeScript project
-RUN npx tsc
+RUN npm --prefix backend run build
 
 # Stage 2: Production image
 FROM node:24-alpine
 
 WORKDIR /app
 
-# Copy package files and install ONLY production dependencies
-COPY package*.json ./
+# Copy backend package.json and install ONLY production dependencies at /app/node_modules
+# so Node's standard upward module resolution finds them from /app/dist/backend/src/
+COPY backend/package*.json ./
 RUN npm install --omit=dev
 
-# Copy compiled JS code from the build stage
-COPY --from=build /app/dist ./dist
+# Copy compiled JS code from the build stage (preserves dist/backend/src/ and dist/shared/ structure)
+COPY --from=build /app/backend/dist ./dist
 
 # Switch to the built-in non-root 'node' user for security
 USER node
@@ -32,5 +34,5 @@ USER node
 # Expose the port the app runs on
 EXPOSE 4000
 
-# Run the compiled application
-CMD ["node", "dist/index.js"]
+# Run the compiled application from the real output path
+CMD ["node", "dist/backend/src/index.js"]
