@@ -150,7 +150,6 @@ export default function App() {
               showColorPicker={showColorPicker}
               colorPickerPos={colorPickerPos as any}
               onColorPick={handleColorPick}
-              closePicker={closePicker}
               removeHighlights={removeHighlights}
             />
           </div>

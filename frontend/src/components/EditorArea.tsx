@@ -9,11 +9,10 @@ interface Props {
   showColorPicker: boolean;
   colorPickerPos: { x: number; y: number } | null;
   onColorPick: (color: string) => void;
-  closePicker: () => void;
   removeHighlights: () => void;
 }
 
-export default function EditorArea({ editableRef, text, setText, uploadedFile, showColorPicker, colorPickerPos, onColorPick, closePicker, removeHighlights }: Props) {
+export default function EditorArea({ editableRef, text, setText, uploadedFile, showColorPicker, colorPickerPos, onColorPick, removeHighlights }: Props) {
   return (
     <>
       <div style={{ position: 'relative' }}>
@@ -43,7 +42,6 @@ export default function EditorArea({ editableRef, text, setText, uploadedFile, s
         <FloatingColorPicker
           position={{ top: colorPickerPos.y, left: colorPickerPos.x }}
           onPick={onColorPick}
-          onClose={() => closePicker()}
           showRemove={true}
           onRemove={() => removeHighlights()}
         />

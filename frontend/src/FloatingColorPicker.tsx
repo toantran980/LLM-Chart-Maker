@@ -11,7 +11,6 @@ const COLORS = [
 interface FloatingColorPickerProps {
   position: { top: number; left: number };
   onPick: (color: string) => void;
-  onClose?: () => void;
   showRemove?: boolean;
   onRemove?: () => void;
 }
