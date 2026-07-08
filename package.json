@@ -9,12 +9,14 @@
   "scripts": {
     "dev": "npm-run-all --parallel backend:dev frontend:dev",
     "build": "npm run backend:build && npm run frontend:build",
-    "test": "npm run backend:test",
+    "test": "npm run backend:test && npm run frontend:test",
     "backend:dev": "cd backend && npm run dev",
+    "backend:build": "cd backend && npm run build",
     "backend:test": "cd backend && npm test",
     "frontend:dev": "cd frontend && npm run dev",
     "frontend:build": "cd frontend && npm run build",
-    "frontend:lint": "cd frontend && npm run lint"
+    "frontend:lint": "cd frontend && npm run lint",
+    "frontend:test": "cd frontend && npm test"
   },
   "devDependencies": {
     "npm-run-all": "^4.1.5"
