@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useRef, useEffect, useState } from 'react';
 
 import * as pdfjsLib from 'pdfjs-dist';
@@ -19,9 +18,9 @@ interface PDFViewerProps {
   diagramType: any;
 }
 
-export default function PDFViewer({ 
-  file, 
-  onClose, 
+export default function PDFViewer({
+  file,
+  onClose,
   highlights: initialHighlights,
   cachedSelection,
   requestDiagram,
@@ -57,11 +56,11 @@ export default function PDFViewer({
         const loadingTask = pdfjsLib.getDocument({ data });
         const pdf = await loadingTask.promise;
         setNumPages(pdf.numPages);
-        
+
         setLoading(true);
         setHighlights([]);
         setManualHighlights([]);
-        
+
         // Extract existing highlights (annotations)
         const allHighlights: Highlight[] = [];
         for (let i = 1; i <= pdf.numPages; i++) {
@@ -85,7 +84,7 @@ export default function PDFViewer({
               if (pageNum > 0) {
                 const page = await pdf.getPage(pageNum);
                 const viewport = page.getViewport({ scale: 2.0 });
-                
+
                 const canvas = canvasRefs.current[pageNum - 1];
                 if (canvas && !canvas.getAttribute('data-rendered')) {
                   canvas.height = viewport.height;
@@ -133,7 +132,7 @@ export default function PDFViewer({
   }, [file]);
 
   if (!file) return null;
-  
+
   return (
     <div className="pdf-viewer-root studio-theme">
       <button className="close-pdf-btn" onClick={onClose}>
@@ -149,8 +148,8 @@ export default function PDFViewer({
         )}
         <div className="pdf-pages-container">
           {Array.from({ length: numPages }).map((_, i) => (
-            <div 
-              key={i} 
+            <div
+              key={i}
               className="pdf-page-container"
               data-page={i + 1}
               onMouseUp={() => {
@@ -158,7 +157,7 @@ export default function PDFViewer({
                 const selectedText = sel ? sel.toString().trim() : '';
                 if (selectedText.length > 5) {
                   setManualHighlights(prev => [...prev, { text: selectedText, color: 'var(--accent-primary)' }]);
-                  
+
                   // Visual confirmation: tint the selected spans
                   const textLayer = textLayerRefs.current[i];
                   if (textLayer) {
@@ -191,17 +190,17 @@ export default function PDFViewer({
           <div className="premium-badge">AI POWERED</div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0 }}>Document Studio</h3>
-            <button 
-              className="secondary-btn-xs" 
+            <button
+              className="secondary-btn-xs"
               onClick={() => {
                 setManualHighlights([]);
                 setHighlights([]);
               }}
-              style={{ 
+              style={{
                 background: 'rgba(255, 255, 255, 0.05)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 color: '#94a3b8',
-                padding: '4px 8px', 
+                padding: '4px 8px',
                 fontSize: '0.65rem',
                 borderRadius: '4px',
                 cursor: 'pointer'
@@ -218,9 +217,9 @@ export default function PDFViewer({
             <span className="pulse-dot"></span>
             <span>Live Sync Active</span>
           </div>
-          
-          <button 
-            className="primary-btn-sm" 
+
+          <button
+            className="primary-btn-sm"
             style={{ marginTop: '1.5rem', width: '100%' }}
             onClick={() => {
               const allText = [...highlights, ...manualHighlights].map(h => h.text).join('\n\n---\n\n');
@@ -241,7 +240,7 @@ export default function PDFViewer({
             <p>Analyzing Document...</p>
           </div>
         )}
-        
+
         <div className="highlights-list-modern custom-scroll">
           {[...highlights, ...manualHighlights].length === 0 && !loading && (
             <div className="empty-state-modern">
@@ -256,7 +255,7 @@ export default function PDFViewer({
               <div className="highlight-body">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div className="highlight-text-content">{hl.text}</div>
-                  <button 
+                  <button
                     onClick={() => {
                       // Filter out based on text content (basic approach)
                       setManualHighlights(prev => prev.filter(h => h.text !== hl.text));

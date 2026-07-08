@@ -48,7 +48,7 @@ export default function App() {
     const base = getApiBase();
     fetch(`${base.replace(/\/$/, '')}/health`).then(r => r.json()).then((j: any) => {
       if (j?.fallback) setFallbackMode(true);
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   // Dark mode side effects
@@ -87,7 +87,7 @@ export default function App() {
   function generateForSelection() {
     // 1. Check for active browser selection first (the most 'live' action)
     const activeSelection = window.getSelection()?.toString().trim();
-    
+
     // 2. Fallback to cached selection from the hook
     const selectionToUse = activeSelection || cachedSelection;
 
@@ -120,20 +120,20 @@ export default function App() {
       <button className="mode-toggle-btn" onClick={() => setDarkMode(!darkMode)}>
         {darkMode ? '☀️ Light' : '🌙 Dark'}
       </button>
-      
+
       <header>
         <h1>Chart Maker</h1>
         <div className="main-subheading">
-          Transform your text into beautiful diagrams using AI. 
+          Transform your text into beautiful diagrams using AI.
           {fallbackMode && <span style={{ color: '#f59e0b', fontWeight: 'bold' }}> (Local Parser)</span>}
         </div>
       </header>
 
       {uploadedFile && uploadedFile.type === 'application/pdf' ? (
-        <PDFViewer 
-          file={uploadedFile} 
-          onClose={() => setUploadedFile(null)} 
-          highlights={[]} 
+        <PDFViewer
+          file={uploadedFile}
+          onClose={() => setUploadedFile(null)}
+          highlights={[]}
           cachedSelection={cachedSelection}
           requestDiagram={requestDiagram}
           diagramType={diagramType}
