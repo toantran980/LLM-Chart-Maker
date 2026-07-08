@@ -2,12 +2,12 @@ import React from 'react';
 import FloatingColorPicker from '../FloatingColorPicker';
 
 interface Props {
-  editableRef: React.RefObject<HTMLDivElement>;
+  editableRef: React.RefObject<HTMLDivElement | null>;
   text: string;
   setText: (s: string) => void;
   uploadedFile: File | null;
   showColorPicker: boolean;
-  colorPickerPos: { x: number; y: number } | null;
+  colorPickerPos: { top: number; left: number } | null;
   onColorPick: (color: string) => void;
   removeHighlights: () => void;
 }
@@ -40,7 +40,7 @@ export default function EditorArea({ editableRef, text, setText, uploadedFile, s
 
       {showColorPicker && !(uploadedFile && uploadedFile.type === 'application/pdf') && colorPickerPos && (
         <FloatingColorPicker
-          position={{ top: colorPickerPos.y, left: colorPickerPos.x }}
+          position={{ top: colorPickerPos.top, left: colorPickerPos.left }}
           onPick={onColorPick}
           showRemove={true}
           onRemove={() => removeHighlights()}

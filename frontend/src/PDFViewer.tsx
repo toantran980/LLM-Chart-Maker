@@ -1,28 +1,40 @@
 import { useRef, useEffect, useState } from 'react';
 
 import * as pdfjsLib from 'pdfjs-dist';
+import type { PDFPageProxy } from 'pdfjs-dist';
 // Essential CSS for text layer alignment and selection
 import 'pdfjs-dist/web/pdf_viewer.css';
 
 // Modern Vite Worker Loader - No more external CDN or 404 issues
 import PDFWorker from 'pdfjs-dist/build/pdf.worker.mjs?worker';
+import type { DiagramType } from '@shared/types';
 pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
 
 type Highlight = { text: string; color?: string };
+
+// Library-derived types (top-level, no dependency on any local `page` variable)
+type RenderParams = Parameters<PDFPageProxy['render']>[0];
+interface TextLayerCtor {
+  new(options: {
+    textContentSource: Awaited<ReturnType<PDFPageProxy['getTextContent']>>;
+    container: HTMLDivElement;
+    viewport: ReturnType<PDFPageProxy['getViewport']>;
+  }): { render: () => Promise<void> };
+}
+
 interface PDFViewerProps {
   file: File | null;
   onClose: () => void;
   highlights: Highlight[];
   cachedSelection: string;
-  requestDiagram: (payload: { text: string; diagramType: any }, which: 'full' | 'selection') => void;
-  diagramType: any;
+  requestDiagram: (payload: { text: string; diagramType: DiagramType }, which: 'full' | 'selection') => void;
+  diagramType: DiagramType;
 }
 
 export default function PDFViewer({
   file,
   onClose,
   highlights: initialHighlights,
-  //cachedSelection,
   requestDiagram,
   diagramType
 }: PDFViewerProps) {
@@ -93,7 +105,7 @@ export default function PDFViewer({
                     canvasContext: canvas.getContext('2d')!,
                     viewport: viewport,
                   };
-                  await page.render(renderContext as any).promise;
+                  await page.render(renderContext as RenderParams).promise;
                   canvas.setAttribute('data-rendered', 'true');
 
                   const textLayerDiv = textLayerRefs.current[pageNum - 1];
@@ -103,7 +115,8 @@ export default function PDFViewer({
                     textLayerDiv.style.height = `${viewport.height}px`;
                     try {
                       const textContent = await page.getTextContent();
-                      const textLayer = new (pdfjsLib as any).TextLayer({
+                      const TextLayer = (pdfjsLib as unknown as { TextLayer: TextLayerCtor }).TextLayer;
+                      const textLayer = new TextLayer({
                         textContentSource: textContent,
                         container: textLayerDiv,
                         viewport: viewport,

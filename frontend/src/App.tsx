@@ -1,4 +1,3 @@
-
 import './App.css';
 import './mermaid-overrides.css';
 import { useState, useRef, useEffect } from 'react';
@@ -13,7 +12,9 @@ import PDFViewer from './PDFViewer';
 
 import type { DiagramType } from '@shared/types';
 
-
+interface HealthResponse {
+  fallback?: boolean;
+}
 
 /**
  * Main application component definition
@@ -29,7 +30,7 @@ export default function App() {
   const [loadingFull, setLoadingFull] = useState(false);
   const [loadingSelection, setLoadingSelection] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const editableRef = useRef<HTMLDivElement>(null as any);
+  const editableRef = useRef<HTMLDivElement>(null);
   const selection = useSelection(editableRef);
   const { cachedSelection, showColorPicker, colorPickerPos, applyHighlight, removeHighlights, hasSelectionOrHighlights, closePicker } = selection;
 
@@ -46,7 +47,7 @@ export default function App() {
   // Check backend health
   useEffect(() => {
     const base = getApiBase();
-    fetch(`${base.replace(/\/$/, '')}/health`).then(r => r.json()).then((j: any) => {
+    fetch(`${base.replace(/\/$/, '')}/health`).then(r => r.json()).then((j: HealthResponse) => {
       if (j?.fallback) setFallbackMode(true);
     }).catch(() => { });
   }, []);
@@ -148,7 +149,7 @@ export default function App() {
               setText={setText}
               uploadedFile={uploadedFile}
               showColorPicker={showColorPicker}
-              colorPickerPos={colorPickerPos as any}
+              colorPickerPos={colorPickerPos}
               onColorPick={handleColorPick}
               removeHighlights={removeHighlights}
             />
@@ -175,4 +176,3 @@ export default function App() {
     </div>
   );
 }
-

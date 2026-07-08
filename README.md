@@ -18,7 +18,7 @@ LLM Chart Maker is a full-stack app for turning document content into Mermaid di
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 24
 - npm
 - An OpenAI API key for full AI generation mode
 
