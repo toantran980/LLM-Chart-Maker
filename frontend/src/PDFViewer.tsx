@@ -68,7 +68,7 @@ export default function PDFViewer({
           const annotations = await page.getAnnotations();
           for (const ann of annotations) {
             if (ann.subtype === 'Highlight') {
-              let text = ann.contents || 'Highlighted Text';
+              const text = ann.contents || 'Highlighted Text';
               if (text) allHighlights.push({ text, color: '#6366f1' });
             }
           }
