@@ -22,7 +22,7 @@ export default function PDFViewer({
   file,
   onClose,
   highlights: initialHighlights,
-  cachedSelection,
+  //cachedSelection,
   requestDiagram,
   diagramType
 }: PDFViewerProps) {
