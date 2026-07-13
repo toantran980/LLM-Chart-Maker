@@ -5,7 +5,7 @@ import { DiagramRequest } from './types';
 
 export function createApp() {
   const app = express();
-  app.use(cors({ origin: true }));
+  app.use(cors({ origin: true })); // "https://your-frontend.vercel.app"
   app.use(express.json({ limit: '1mb' }));
 
   app.get('/health', (_req, res) => {

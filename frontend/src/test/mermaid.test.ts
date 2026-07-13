@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractMermaidCode } from './mermaid';
+import { extractMermaidCode } from '../utils/mermaid';
 
 describe('extractMermaidCode', () => {
   it('extracts code from a fenced mermaid block', () => {

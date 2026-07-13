@@ -86,15 +86,15 @@ export default function App() {
   }
 
   function generateForSelection() {
-    // 1. Check for active browser selection first (the most 'live' action)
+    // Check for active browser selection first (the most 'live' action)
     const activeSelection = window.getSelection()?.toString().trim();
 
-    // 2. Fallback to cached selection from the hook
+    // Fallback to cached selection from the hook
     const selectionToUse = activeSelection || cachedSelection;
 
     let highlightedText = '';
     if (!selectionToUse && editableRef.current) {
-      // 3. Only then look for manual color highlights
+      // Only then look for manual color highlights
       const highlights = Array.from(editableRef.current.querySelectorAll('span.highlighted-text'));
       highlights.sort((a, b) => {
         if (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_PRECEDING) return 1;
