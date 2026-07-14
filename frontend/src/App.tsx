@@ -25,6 +25,7 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [text, setText] = useState<string>('');
   const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
+  const [direction, setDirection] = useState<string>('LR');
   const [mermaid, setMermaid] = useState<string>('');
   const [fallbackMode, setFallbackMode] = useState<boolean>(false);
   const [loadingFull, setLoadingFull] = useState(false);
@@ -64,7 +65,7 @@ export default function App() {
     }
   }
 
-  async function requestDiagram(payload: { text: string; diagramType: DiagramType }, which: 'full' | 'selection') {
+  async function requestDiagram(payload: { text: string; diagramType: DiagramType; direction?: string }, which: 'full' | 'selection') {
     const trimmedText = payload.text?.trim();
     if (!trimmedText) {
       setMermaid('');
@@ -107,7 +108,7 @@ export default function App() {
         .join('\n');
     }
 
-    const payload = { text: selectionToUse || highlightedText || text, diagramType };
+    const payload = { text: selectionToUse || highlightedText || text, diagramType, direction };
     requestDiagram(payload, 'selection');
   }
 
@@ -158,9 +159,11 @@ export default function App() {
           <Controls
             diagramType={diagramType}
             setDiagramType={setDiagramType}
+            direction={direction}
+            setDirection={setDirection}
             onGenerateFull={() => {
               const latestText = editableRef.current ? editableRef.current.innerText : text;
-              requestDiagram({ text: latestText, diagramType }, 'full');
+              requestDiagram({ text: latestText, diagramType, direction }, 'full');
             }}
             onGenerateSelection={generateForSelection}
             loadingFull={loadingFull}

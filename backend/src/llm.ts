@@ -3,11 +3,17 @@ import { DiagramRequest } from '../../shared/types';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
-const DEFAULT_DIRECTION = 'TD';
+
+// Smart defaults: LR works better for most process/rule flows; TD for hierarchies
+const DIRECTION_DEFAULTS: Record<string, string> = {
+  flowchart: 'LR',
+  rules: 'LR',
+  timeline: 'LR', // sequence diagrams ignore this anyway
+};
 
 function buildPrompt(req: DiagramRequest & { direction?: string }) {
   const { text, diagramType, instruction, direction } = req;
-  const dir = direction || DEFAULT_DIRECTION;
+  const dir = direction || DIRECTION_DEFAULTS[diagramType] || 'LR';
   const directive = `
 Convert the input into a Mermaid ${diagramType} diagram.
 
@@ -17,8 +23,9 @@ Rules:
 ...diagram...
 \`\`\`
 - No explanations, no conversation, no markdown headers.
-- For flowchart/rules, use: flowchart ${dir}
-- For sequence diagrams (timeline), use: sequenceDiagram
+- For flowchart/rules, use direction: flowchart ${dir}
+- For sequenceDiagram or timeline, use the appropriate Mermaid keyword without a direction.
+- Choose the BEST layout for readability given the content — prefer LR for process flows and pipelines, TD for strict hierarchies (e.g. org charts, trees).
 - IMPORTANT: If a label contains double quotes, escape them using #quot; (e.g., A["A label with #quot;quotes#quot;"]).
 - Avoid using special characters like [], (), {}, or > inside labels unless they are properly quoted.
 - Keep output syntactically valid for Mermaid version 11.

@@ -4,6 +4,8 @@ import type { DiagramType } from '@shared/types';
 interface Props {
   diagramType: DiagramType;
   setDiagramType: (t: DiagramType) => void;
+  direction: string;
+  setDirection: (d: string) => void;
   onGenerateFull: () => void;
   onGenerateSelection: () => void;
   loadingFull: boolean;
@@ -12,9 +14,18 @@ interface Props {
   onFileLoaded: (content: string, file: File) => void;
 }
 
+const DIRECTIONS = [
+  { value: 'LR', label: '→ Left to Right' },
+  { value: 'RL', label: '← Right to Left' },
+  { value: 'TD', label: '↓ Top to Bottom' },
+  { value: 'BT', label: '↑ Bottom to Top' },
+];
+
 export default function Controls({ 
   diagramType, 
-  setDiagramType, 
+  setDiagramType,
+  direction,
+  setDirection,
   onGenerateFull, 
   onGenerateSelection, 
   loadingFull, 
@@ -22,6 +33,8 @@ export default function Controls({
   hasSelectionOrHighlights, 
   onFileLoaded 
 }: Props) {
+  const showDirection = diagramType === 'flowchart' || diagramType === 'rules';
+
   return (
     <div className="controls">
       <div className="settings-grid">
@@ -37,6 +50,21 @@ export default function Controls({
             <option value="rules">🛡️ Rules Map</option>
           </select>
         </div>
+
+        {showDirection && (
+          <div className="setting-item">
+            <label className="small-section">Direction</label>
+            <select
+              value={direction}
+              onChange={(e) => setDirection(e.target.value)}
+              className="modern-select"
+            >
+              {DIRECTIONS.map(d => (
+                <option key={d.value} value={d.value}>{d.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="setting-item">
           <label className="small-section">Actions</label>
