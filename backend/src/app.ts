@@ -5,7 +5,25 @@ import { DiagramRequest } from './types';
 
 export function createApp() {
   const app = express();
-  app.use(cors({ origin: true })); // "https://your-frontend.vercel.app"
+
+  const allowedOrigins = [
+    process.env.ALLOWED_ORIGIN,      // e.g. https://your-frontend.vercel.app  (set in Railway)
+    'http://localhost:5173',          // Vite local dev
+    'http://localhost:4173',          // Vite preview
+  ].filter(Boolean) as string[];
+
+  app.use(cors({
+    origin: function (origin, callback) {
+      // Allow non-browser requests (curl, Railway health checks) and listed origins
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS: origin "${origin}" not allowed`));
+      }
+    },
+    credentials: true,
+  }));
+
   app.use(express.json({ limit: '1mb' }));
 
   app.get('/health', (_req, res) => {
