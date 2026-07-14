@@ -1,81 +1,81 @@
 # LLM Chart Maker
 
-LLM Chart Maker is a full-stack app for turning document content into Mermaid diagrams with the help of an LLM. Users can upload a PDF, select relevant text, and generate structured diagrams from their highlights.
+LLM Chart Maker is a production-ready, full-stack monorepo application that transforms natural language text and PDF document contents into beautiful, interactive Mermaid diagrams. It supports selecting text snippets from uploaded documents to construct tailored visual process flows, timelines, rules, and mindmaps.
 
-## Features
+Live Application: https://llm-chart-maker-frontend.vercel.app/
 
-- Upload and view PDF documents in the browser
-- Highlight or select text snippets from the document
-- Build a diagram from one or more collected snippets
-- Generate Mermaid diagrams through a backend AI workflow
-- Preview and copy the generated diagram output
+---
+
+## Architecture & Core Structure
+
+The project is structured as a TypeScript monorepo with shared data contracts to ensure type safety across the entire stack:
+
+```
+├── shared/           # Common interfaces, types, and diagram requests
+├── frontend/         # React SPA built with Vite and Mermaid.js
+└── backend/          # Express.js REST API with LLM generation engines
+```
+
+* Frontend: Responsive React layout designed with modern dark/light mode toggles. Incorporates pdfjs-dist to render uploaded PDFs directly in-browser and supports interactive workspace text highlights.
+* Backend: Express service configured with strict production CORS origins, dynamically bound ports, and standard JSON limits.
+* Type-Sharing: Frontend payloads and API responses are governed by the shared folder, ensuring synchronized interfaces without duplicate definitions.
+
+---
+
+## Key Features
+
+- Document Highlight Sync: Render PDFs in-browser, highlight paragraphs or key sections, and aggregate them into a diagram-generation input.
+- Smart AI Directions: Automatically detects the structural flow of content (e.g. LR for processes/pipelines, TD for hierarchies) to render optimal layout alignments.
+- Interactive Formatting: Provides action items to copy Mermaid code definitions directly or export diagrams as high-resolution SVGs or PNGs.
+- Local Fallback Mode: Safe backend error handling that falls back to a deterministic rule-based parser if API limits or credentials are not configured.
+
+---
 
 ## Tech Stack
 
-- Frontend: React, TypeScript, Vite, Mermaid, PDF.js
-- Backend: Express, TypeScript, Axios
-- Shared contracts: TypeScript types in the shared folder
+* Core & Languages: TypeScript, Node.js, HTML5/CSS3
+* Frontend: React, Vite, Mermaid.js, PDF.js
+* Backend: Express, Axios (for GPT completions)
+* DevOps & Deploys: Render (Backend Web Service), Vercel (Frontend Hosting), Docker Compose
 
-## Requirements
+---
 
-- Node.js 24
-- npm
-- An OpenAI API key for full AI generation mode
+## Local Development
 
-## Setup
-
-1. Install dependencies from the project root:
-
+### 1. Install Dependencies
+Run from the project root to install all workspaces:
 ```bash
 npm install
 ```
 
-2. Create a `.env` file in the project root with your API key:
-
+### 2. Configure Environment variables
+Create a .env file in the project root:
 ```env
-OPENAI_API_KEY=your_openai_api_key
+OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-Optional:
-
-```env
-OPENAI_API_URL=https://api.openai.com/v1/chat/completions
-```
-
-3. Start the app in development mode:
-
+### 3. Run Dev Services
+Start both frontend (Vite) and backend (Express) concurrently:
 ```bash
 npm run dev
 ```
-
-This starts both services in parallel:
-
 - Frontend: http://localhost:5173
-- Backend: http://localhost:4000
+- Backend API: http://localhost:4000 (Health check: /health)
 
-The backend also exposes a health check at http://localhost:4000/health.
-
-## Docker
-
-You can also run the project with Docker:
-
+### Docker Setup
+To spin up the entire application stack in containers:
 ```bash
 docker compose up --build
 ```
+Then visit http://localhost.
 
-Then open the frontend at http://localhost.
+---
 
-## Available Scripts
+## Deployment & CI/CD
 
-- `npm run dev` — start frontend and backend together
-- `npm run build` — build the full app
-- `npm run test` — run backend tests
-- `npm run frontend:lint` — lint the frontend
+This application is configured for Continuous Deployment:
 
-## Notes
-
-If no OpenAI API key is present, the backend can still start in fallback mode and use its local parser behavior.
-
-## License
-
-This project is available under the MIT License.
+1. Frontend: Hosted on Vercel configured with the frontend root directory and linked to the Render backend via VITE_API_BASE.
+2. Backend: Deployed on Render (Node.js Web Service) referencing the backend root directory.
+3. Security: CORS is restricted dynamically using the ALLOWED_ORIGIN environment variable pointing to the Vercel domain, keeping API credentials safely on the backend server.
+
