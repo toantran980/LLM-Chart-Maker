@@ -15,6 +15,7 @@ export function createApp() {
 
   app.use(cors({
     origin: function (origin, callback) {
+      console.log(`[CORS] Request Origin: "${origin}" | Allowed Origins:`, allowedOrigins);
       // Allow non-browser requests (curl, Railway health checks) and listed origins
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
