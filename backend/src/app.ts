@@ -8,7 +8,7 @@ export function createApp() {
 
   const originEnv = process.env.ALLOWED_ORIGIN;
   const allowedOrigins = [
-    originEnv ? originEnv.replace(/\/$/, '') : undefined,      // Strip trailing slash if present
+    originEnv ? originEnv.trim().replace(/^['"]|['"]$/g, '').replace(/\/$/, '') : undefined, // Trim, strip quotes & trailing slash
     'http://localhost:5173',          // Vite local dev
     'http://localhost:4173',          // Vite preview
   ].filter(Boolean) as string[];
