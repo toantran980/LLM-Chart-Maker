@@ -7,8 +7,13 @@ export function createApp() {
   const app = express();
 
   const originEnv = process.env.ALLOWED_ORIGIN;
+  let parsedOrigin = originEnv ? originEnv.trim().replace(/^['"]|['"]$/g, '').replace(/\/$/, '') : undefined;
+  if (parsedOrigin && !parsedOrigin.startsWith('http://') && !parsedOrigin.startsWith('https://')) {
+    parsedOrigin = `https://${parsedOrigin}`; // Auto-prepend https:// if missing
+  }
+
   const allowedOrigins = [
-    originEnv ? originEnv.trim().replace(/^['"]|['"]$/g, '').replace(/\/$/, '') : undefined, // Trim, strip quotes & trailing slash
+    parsedOrigin,
     'http://localhost:5173',          // Vite local dev
     'http://localhost:4173',          // Vite preview
   ].filter(Boolean) as string[];
