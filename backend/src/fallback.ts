@@ -14,6 +14,9 @@ function shorten(s: string, n: number) {
 export function fallbackDiagram(req: DiagramRequest & { direction?: string }): string {
   const { text, diagramType, direction, instruction } = req;
   let dir = direction || DEFAULT_DIRECTION;
+  if (dir === 'auto') {
+    dir = 'LR'; // 'auto' is not valid Mermaid syntax; default to 'LR'
+  }
   let styleDirectives = '';
 
   if (instruction) {
