@@ -25,7 +25,7 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [text, setText] = useState<string>('');
   const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
-  const [direction, setDirection] = useState<string>('LR');
+  const [direction, setDirection] = useState<string>('auto');
   const [mermaid, setMermaid] = useState<string>('');
   const [fallbackMode, setFallbackMode] = useState<boolean>(false);
   const [loadingFull, setLoadingFull] = useState(false);

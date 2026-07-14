@@ -4,16 +4,24 @@ import { DiagramRequest } from '../../shared/types';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
 
-// Smart defaults: LR works better for most process/rule flows; TD for hierarchies
-const DIRECTION_DEFAULTS: Record<string, string> = {
-  flowchart: 'LR',
-  rules: 'LR',
-  timeline: 'LR', // sequence diagrams ignore this anyway
-};
+// Sentinel value meaning "let the LLM decide"
+const AUTO = 'auto';
 
 function buildPrompt(req: DiagramRequest & { direction?: string }) {
   const { text, diagramType, instruction, direction } = req;
-  const dir = direction || DIRECTION_DEFAULTS[diagramType] || 'LR';
+  const isAuto = !direction || direction === AUTO;
+
+  // Direction instruction block: either tell LLM to choose, or force the user's pick
+  const directionRule = diagramType === 'timeline'
+    ? '- Use the appropriate Mermaid keyword for this diagram type (e.g. sequenceDiagram, timeline) with no direction.'
+    : isAuto
+      ? `- Choose the BEST direction for this flowchart based on the content structure:
+  - Use LR (left→right) for: pipelines, workflows, processes, step-by-step flows, data pipelines
+  - Use TD (top→bottom) for: org charts, class hierarchies, trees, parent→child structures
+  - Use RL or BT only if the content clearly calls for it
+  - Write the opening line as: flowchart <chosen-direction>`
+      : `- The user has chosen direction: ${direction}. You MUST use: flowchart ${direction}`;
+
   const directive = `
 Convert the input into a Mermaid ${diagramType} diagram.
 
@@ -23,9 +31,7 @@ Rules:
 ...diagram...
 \`\`\`
 - No explanations, no conversation, no markdown headers.
-- For flowchart/rules, use direction: flowchart ${dir}
-- For sequenceDiagram or timeline, use the appropriate Mermaid keyword without a direction.
-- Choose the BEST layout for readability given the content — prefer LR for process flows and pipelines, TD for strict hierarchies (e.g. org charts, trees).
+${directionRule}
 - IMPORTANT: If a label contains double quotes, escape them using #quot; (e.g., A["A label with #quot;quotes#quot;"]).
 - Avoid using special characters like [], (), {}, or > inside labels unless they are properly quoted.
 - Keep output syntactically valid for Mermaid version 11.
