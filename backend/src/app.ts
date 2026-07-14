@@ -6,8 +6,9 @@ import { DiagramRequest } from './types';
 export function createApp() {
   const app = express();
 
+  const originEnv = process.env.ALLOWED_ORIGIN;
   const allowedOrigins = [
-    process.env.ALLOWED_ORIGIN,      // e.g. https://your-frontend.vercel.app  (set in Railway)
+    originEnv ? originEnv.replace(/\/$/, '') : undefined,      // Strip trailing slash if present
     'http://localhost:5173',          // Vite local dev
     'http://localhost:4173',          // Vite preview
   ].filter(Boolean) as string[];
