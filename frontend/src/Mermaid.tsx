@@ -169,14 +169,7 @@ export default function Mermaid({ chart }: MermaidProps) {
         link.click();
       }
     };
-    const blob: Blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const objectUrl: string = URL.createObjectURL(blob);
-    img.onload = (): void => {
-      requestAnimationFrame(() => {
-        URL.revokeObjectURL(objectUrl);
-      });
-    };
-    img.src = objectUrl;
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
   const copyCode = () => {
