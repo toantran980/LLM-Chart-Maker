@@ -1,13 +1,15 @@
-//import 'dotenv/config'; //locally fail to load .env files if not in root folder
+//import 'dotenv/config';
 import dotenv from 'dotenv';
-import { createApp } from './app';
 import path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+const envPath = path.resolve(__dirname, '../../.env');
+dotenv.config({ path: envPath });
+
+//import { createApp } from './app';
+const { createApp } = require('./app');
 
 const app = createApp();
 const PORT = process.env.PORT || 4000;
-
 
 app.listen(PORT, () => {
   console.log(`text2diagram backend listening on http://localhost:${PORT}`);
