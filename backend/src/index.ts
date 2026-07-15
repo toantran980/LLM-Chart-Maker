@@ -1,12 +1,6 @@
-//import 'dotenv/config';
-import dotenv from 'dotenv';
-import path from 'path';
+import 'dotenv/config';
 
-const envPath = path.resolve(__dirname, '../../.env');
-dotenv.config({ path: envPath });
-
-//import { createApp } from './app';
-const { createApp } = require('./app');
+import { createApp } from './app';
 
 const app = createApp();
 const PORT = process.env.PORT || 4000;

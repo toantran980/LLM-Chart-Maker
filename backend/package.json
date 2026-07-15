@@ -2,7 +2,7 @@
   "name": "backend",
   "version": "1.0.0",
   "scripts": {
-    "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
+    "dev": "dotenv -e ../.env -- nodemon --watch src --ext ts --exec ts-node src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/backend/src/index.js",
     "test": "vitest run"
@@ -16,14 +16,15 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },
-    "devDependencies": {
-      "@types/axios": "^0.9.36",
-      "@types/cors": "^2.8.19",
-      "@types/express": "^5.0.3",
-      "@types/node": "^24.3.1",
-      "@types/supertest": "^6.0.3",
-      "nodemon": "^3.1.10",
-      "supertest": "^7.1.4",
-      "vitest": "^3.2.4"
-    }
+  "devDependencies": {
+    "@types/axios": "^0.9.36",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.1",
+    "@types/supertest": "^6.0.3",
+    "dotenv-cli": "^11.0.0",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.4",
+    "vitest": "^3.2.4"
+  }
 }
