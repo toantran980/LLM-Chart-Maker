@@ -59,11 +59,12 @@ export default function Result({ mermaid }: Props) {
         downloadLink.click();
       }
     };
-    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    img.src = URL.createObjectURL(blob);
-
-    // release memory after loading
-    img.onload = () => URL.revokeObjectURL(img.src);
+    const blob: Blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const objectUrl: string = URL.createObjectURL(blob);
+    img.onload = (): void => {
+      URL.revokeObjectURL(objectUrl);
+    };
+    img.src = objectUrl;
   };
 
   return (

@@ -37,12 +37,12 @@ mermaid.initialize({
 
 async function renderMermaid(def: string, containerEl: HTMLDivElement) {
   const uid = 'm' + Math.random().toString(36).substring(2, 10);
-  
+
   try {
     // Mermaid 11 render returns a Promise<{ svg, bindFunctions }>
     const { svg } = await mermaid.render(uid, def);
     containerEl.innerHTML = svg;
-    
+
     // Inject custom premium styles
     const style = document.createElement('style');
     style.innerHTML = `
@@ -83,10 +83,10 @@ export default function Mermaid({ chart }: MermaidProps) {
 
   useEffect(() => {
     if (!ref.current) return;
-    
+
     // Clear previous content
     ref.current.innerHTML = '<div class="mermaid-loading">Rendering diagram...</div>';
-    
+
     if (!chart || !chart.trim()) {
       ref.current.innerHTML = '<pre style="color:gray; font-style: italic;">No diagram data available</pre>';
       return;
@@ -150,12 +150,12 @@ export default function Mermaid({ chart }: MermaidProps) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    
+
     // Set canvas dimensions
     const bBox = svg.getBBox();
     canvas.width = bBox.width * 2; // High res
     canvas.height = bBox.height * 2;
-    
+
     img.onload = () => {
       if (ctx) {
         ctx.fillStyle = 'white';
@@ -169,7 +169,14 @@ export default function Mermaid({ chart }: MermaidProps) {
         link.click();
       }
     };
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    const blob: Blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const objectUrl: string = URL.createObjectURL(blob);
+    img.onload = (): void => {
+      requestAnimationFrame(() => {
+        URL.revokeObjectURL(objectUrl);
+      });
+    };
+    img.src = objectUrl;
   };
 
   const copyCode = () => {
