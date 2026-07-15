@@ -42,11 +42,11 @@ export default function Result({ mermaid }: Props) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    
+
     const svgRect = svg.getBoundingClientRect();
     canvas.width = svgRect.width * 2;
     canvas.height = svgRect.height * 2;
-    
+
     img.onload = () => {
       if (ctx) {
         ctx.fillStyle = 'white';
@@ -59,7 +59,11 @@ export default function Result({ mermaid }: Props) {
         downloadLink.click();
       }
     };
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    img.src = URL.createObjectURL(blob);
+
+    // release memory after loading
+    img.onload = () => URL.revokeObjectURL(img.src);
   };
 
   return (
