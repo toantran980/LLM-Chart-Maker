@@ -52,7 +52,7 @@ export async function generateDiagramWithLLM(req: DiagramRequest): Promise<strin
   const prompt = buildPrompt(req);
 
   const payload = {
-    model: 'gpt-5.4 mini',
+    model: 'gpt-5.4-mini',
     messages: [
       { role: 'system', content: 'You are a precise Mermaid diagram generator. You only output valid Mermaid code within markdown blocks.' },
       { role: 'user', content: prompt }
