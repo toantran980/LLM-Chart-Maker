@@ -58,7 +58,7 @@ export async function generateDiagramWithLLM(req: DiagramRequest): Promise<strin
       { role: 'user', content: prompt }
     ],
     temperature: 0.1,
-    max_tokens: 1000
+    max_completion_tokens: 1000
   };
 
   const headers = {
