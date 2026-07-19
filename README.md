@@ -60,7 +60,7 @@ Start both frontend (Vite) and backend (Express) concurrently:
 npm run dev
 ```
 - Frontend: http://localhost:5173
-- Backend API: http://localhost:4000 (Health check: /health)
+- Backend API: http://localhost:4173 (Health check: /health)
 
 ### Docker Setup
 To spin up the entire application stack in containers:
@@ -78,4 +78,4 @@ This application is configured for Continuous Deployment:
 1. Frontend: Hosted on Vercel configured with the frontend root directory and linked to the Render backend via VITE_API_BASE.
 2. Backend: Deployed on Render (Node.js Web Service) referencing the backend root directory.
 3. Security: CORS is restricted dynamically using the ALLOWED_ORIGIN environment variable pointing to the Vercel domain, keeping API credentials safely on the backend server.
-
+
