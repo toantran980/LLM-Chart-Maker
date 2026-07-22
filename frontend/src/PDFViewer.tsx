@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 
 import * as pdfjsLib from 'pdfjs-dist';
 import type { PDFPageProxy } from 'pdfjs-dist';
+
 // Essential CSS for text layer alignment and selection
 import 'pdfjs-dist/web/pdf_viewer.css';
 
@@ -14,6 +15,9 @@ type Highlight = { text: string; color?: string };
 
 // Library-derived types (top-level, no dependency on any local `page` variable)
 type RenderParams = Parameters<PDFPageProxy['render']>[0];
+
+type TextItem = Awaited<ReturnType<PDFPageProxy['getTextContent']>>['items'][number];
+
 interface TextLayerCtor {
   new(options: {
     textContentSource: Awaited<ReturnType<PDFPageProxy['getTextContent']>>;
@@ -29,6 +33,10 @@ interface PDFViewerProps {
   cachedSelection: string;
   requestDiagram: (payload: { text: string; diagramType: DiagramType }, which: 'full' | 'selection') => void;
   diagramType: DiagramType;
+}
+
+function isTextItem(item: TextItem): item is TextItem & { str: string } {
+  return 'str' in item;
 }
 
 export default function PDFViewer({
@@ -94,12 +102,12 @@ export default function PDFViewer({
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
-          const pageStr = textContent.items.map((item: any) => item.str).join(' ');
+          const pageStr = textContent.items.map((item) => (isTextItem(item) ? item.str : '')).join(' ');
           fullText += pageStr + '\n\n';
           if (fullText.length > 12000) {
-             setIsPdfTruncated(true);
-             fullText = fullText.substring(0, 12000) + '\n\n...[TRUNCATED]';
-             break;
+            setIsPdfTruncated(true);
+            fullText = fullText.substring(0, 12000) + '\n\n...[TRUNCATED]';
+            break;
           }
         }
         setFullPdfText(fullText.trim());
@@ -280,7 +288,7 @@ export default function PDFViewer({
           >
             📄 Diagram Entire PDF
           </button>
-          
+
           {isPdfTruncated && (
             <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '0.5rem', borderRadius: '4px', textAlign: 'center' }}>
               ⚠️ Document is very long. Only the first ~12,000 characters will be sent to the LLM.
