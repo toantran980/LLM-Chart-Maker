@@ -1,11 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
 
 interface MermaidProps {
   chart: string;
 }
 
-// Mermaid 11+ Initialization for a "Premium" look
 mermaid.initialize({
   startOnLoad: false,
   theme: 'base',
@@ -39,7 +38,7 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement) {
   const uid = 'm' + Math.random().toString(36).substring(2, 10);
 
   try {
-    // Mermaid 11 render returns a Promise<{ svg, bindFunctions }>
+    // Mermaid render returns a Promise<{ svg, bindFunctions }>
     const { svg } = await mermaid.render(uid, def);
     containerEl.innerHTML = svg;
 
@@ -151,25 +150,37 @@ export default function Mermaid({ chart }: MermaidProps) {
     const ctx = canvas.getContext('2d');
     const img = new Image();
 
-    // Set canvas dimensions
-    const bBox = svg.getBBox();
-    canvas.width = bBox.width * 2; // High res
-    canvas.height = bBox.height * 2;
+    // Use scale for a reasonable file size
+    const SCALE = 1.5;
+    const svgEl = svg as SVGSVGElement;
+    const svgWidth = svgEl.viewBox?.baseVal?.width || svgEl.width?.baseVal?.value || 800;
+    const svgHeight = svgEl.viewBox?.baseVal?.height || svgEl.height?.baseVal?.value || 600;
+    canvas.width = svgWidth * SCALE;
+    canvas.height = svgHeight * SCALE;
 
     img.onload = () => {
       if (ctx) {
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.scale(2, 2);
-        ctx.drawImage(img, 0, 0);
-        const pngUrl = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.href = pngUrl;
-        link.download = `diagram-${Date.now()}.png`;
-        link.click();
+        ctx.scale(SCALE, SCALE);
+        ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+        // use toBlob for smaller file sizes
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `diagram-${Date.now()}.png`;
+          link.click();
+          URL.revokeObjectURL(url);
+        }, 'image/png');
       }
     };
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    // encode SVG string to base64 
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(svgData);
+    const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
+    img.src = 'data:image/svg+xml;base64,' + btoa(binary);
   };
 
   const copyCode = () => {
@@ -177,6 +188,37 @@ export default function Mermaid({ chart }: MermaidProps) {
       alert("Mermaid code copied to clipboard!");
     });
   };
+
+  // Zoom / Pan state
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const dragging = useRef(false);
+  const lastPos = useRef({ x: 0, y: 0 });
+
+  const resetView = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
+
+  const onWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    setZoom(prev => Math.min(5, Math.max(0.2, prev - e.deltaY * 0.001)));
+  }, []);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    dragging.current = true;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragging.current) return;
+    const dx = e.clientX - lastPos.current.x;
+    const dy = e.clientY - lastPos.current.y;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+  }, []);
+
+  const onMouseUp = useCallback(() => { dragging.current = false; }, []);
 
   return (
     <div style={{ width: '100%', position: 'relative' }}>
@@ -191,12 +233,44 @@ export default function Mermaid({ chart }: MermaidProps) {
         <button onClick={copyCode} className="secondary-btn-xs" title="Copy Code">📋</button>
         <button onClick={downloadSVG} className="secondary-btn-xs" title="Download SVG">SVG</button>
         <button onClick={downloadPNG} className="primary-btn-sm" style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem' }} title="Download PNG">Download PNG</button>
+        <button
+          onClick={resetView}
+          className="secondary-btn-xs"
+          title="Reset zoom (Scroll to zoom, drag to pan)"
+          style={{ fontSize: '0.75rem', padding: '0.35rem 0.6rem' }}
+        >
+          🔍 {Math.round(zoom * 100)}%
+        </button>
       </div>
+
+      {/* Zoom/pan viewport */}
       <div
-        ref={ref}
-        className="mermaid-container"
-        style={{ width: '100%', display: 'flex', justifyContent: 'center', padding: '3rem 1rem' }}
-      />
+        style={{
+          width: '100%',
+          overflow: 'hidden',
+          cursor: dragging.current ? 'grabbing' : 'grab',
+          userSelect: 'none',
+        }}
+        onWheel={onWheel}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+      >
+        <div
+          ref={ref}
+          className="mermaid-container"
+          style={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '3rem 1rem',
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: 'center top',
+            transition: dragging.current ? 'none' : 'transform 0.05s ease',
+          }}
+        />
+      </div>
     </div>
   );
 }
