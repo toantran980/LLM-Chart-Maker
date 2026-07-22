@@ -1,15 +1,29 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
+import type { MermaidConfig } from 'mermaid';
+
+type MermaidTheme = NonNullable<MermaidConfig['theme']>;
 
 interface MermaidProps {
   chart: string;
   theme?: string;
 }
 
+const VALID_THEMES: MermaidTheme[] = [
+  'default', 'base', 'dark', 'forest', 'neutral',
+  'neo', 'neo-dark', 'redux', 'redux-dark',
+  'redux-color', 'redux-dark-color', 'null'
+];
+
+function isMermaidTheme(value: string): value is MermaidTheme {
+  return (VALID_THEMES as string[]).includes(value);
+}
+
 async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: string = 'base') {
+  const resolvedTheme: MermaidTheme = isMermaidTheme(theme) ? theme : 'base';
   mermaid.initialize({
     startOnLoad: false,
-    theme: theme as any,
+    theme: resolvedTheme,
     themeVariables: {
       primaryColor: '#6366f1',
       primaryTextColor: '#ffffff',
@@ -216,7 +230,7 @@ export default function Mermaid({ chart, theme = 'base' }: MermaidProps) {
     setPan({ x: 0, y: 0 });
   }, []);
 
-  const zoomIn  = useCallback(() => setZoom(prev => Math.min(5,   Math.round((prev + 0.25) * 100) / 100)), []);
+  const zoomIn = useCallback(() => setZoom(prev => Math.min(5, Math.round((prev + 0.25) * 100) / 100)), []);
   const zoomOut = useCallback(() => setZoom(prev => Math.max(0.25, Math.round((prev - 0.25) * 100) / 100)), []);
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
