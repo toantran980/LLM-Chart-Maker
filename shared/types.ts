@@ -1,4 +1,4 @@
-export type DiagramType = 'flowchart' | 'timeline' | 'rules';
+export type DiagramType = 'flowchart' | 'timeline' | 'rules' | 'gantt' | 'er' | 'mindmap' | 'gitgraph';
 
 export interface DiagramRequest {
   text: string;

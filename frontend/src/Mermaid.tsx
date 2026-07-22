@@ -3,38 +3,39 @@ import mermaid from 'mermaid';
 
 interface MermaidProps {
   chart: string;
+  theme?: string;
 }
 
-mermaid.initialize({
-  startOnLoad: false,
-  theme: 'base',
-  themeVariables: {
-    primaryColor: '#6366f1',
-    primaryTextColor: '#ffffff',
-    primaryBorderColor: '#4338ca',
-    lineColor: '#6366f1',
-    secondaryColor: '#f8fafc',
-    tertiaryColor: '#f1f5f9',
-    fontFamily: 'Outfit, Inter, system-ui, sans-serif',
-    fontSize: '15px',
-    mainBkg: '#6366f1',
-    nodeBorder: '#4338ca',
-    clusterBkg: '#f8fafc',
-    clusterBorder: '#e2e8f0',
-    edgeLabelBackground: '#ffffff',
-    nodeRadius: '12'
-  },
-  flowchart: {
-    useMaxWidth: true,
-    htmlLabels: true,
-    curve: 'basis',
-    padding: 20,
-    nodeSpacing: 60,
-    rankSpacing: 60
-  }
-});
+async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: string = 'base') {
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: theme as any,
+    themeVariables: {
+      primaryColor: '#6366f1',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#4338ca',
+      lineColor: '#6366f1',
+      secondaryColor: '#f8fafc',
+      tertiaryColor: '#f1f5f9',
+      fontFamily: 'Outfit, Inter, system-ui, sans-serif',
+      fontSize: '15px',
+      mainBkg: '#6366f1',
+      nodeBorder: '#4338ca',
+      clusterBkg: '#f8fafc',
+      clusterBorder: '#e2e8f0',
+      edgeLabelBackground: '#ffffff',
+      nodeRadius: '12'
+    },
+    flowchart: {
+      useMaxWidth: true,
+      htmlLabels: true,
+      curve: 'basis',
+      padding: 20,
+      nodeSpacing: 60,
+      rankSpacing: 60
+    }
+  });
 
-async function renderMermaid(def: string, containerEl: HTMLDivElement) {
   const uid = 'm' + Math.random().toString(36).substring(2, 10);
 
   try {
@@ -77,7 +78,7 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement) {
   }
 }
 
-export default function Mermaid({ chart }: MermaidProps) {
+export default function Mermaid({ chart, theme = 'base' }: MermaidProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -91,7 +92,7 @@ export default function Mermaid({ chart }: MermaidProps) {
       return;
     }
 
-    renderMermaid(chart, ref.current).catch((err) => {
+    renderMermaid(chart, ref.current, theme).catch((err) => {
       if (ref.current) {
         ref.current.innerHTML = `
           <div class="mermaid-error-box" style="
@@ -124,7 +125,7 @@ export default function Mermaid({ chart }: MermaidProps) {
         `;
       }
     });
-  }, [chart]);
+  }, [chart, theme]);
 
   const downloadSVG = () => {
     if (!ref.current) return;
@@ -189,6 +190,21 @@ export default function Mermaid({ chart }: MermaidProps) {
     });
   };
 
+  const copyEmbed = () => {
+    if (!ref.current) return;
+    const svg = ref.current.querySelector('svg');
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(svgData);
+    const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
+    const base64 = btoa(binary);
+    const embedCode = `<img src="data:image/svg+xml;base64,${base64}" alt="Diagram" />`;
+    navigator.clipboard.writeText(embedCode).then(() => {
+      alert("Embed code copied to clipboard!");
+    });
+  };
+
   // Zoom / Pan state
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -200,10 +216,8 @@ export default function Mermaid({ chart }: MermaidProps) {
     setPan({ x: 0, y: 0 });
   }, []);
 
-  const onWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    setZoom(prev => Math.min(5, Math.max(0.2, prev - e.deltaY * 0.001)));
-  }, []);
+  const zoomIn  = useCallback(() => setZoom(prev => Math.min(5,   Math.round((prev + 0.25) * 100) / 100)), []);
+  const zoomOut = useCallback(() => setZoom(prev => Math.max(0.25, Math.round((prev - 0.25) * 100) / 100)), []);
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     dragging.current = true;
@@ -231,16 +245,20 @@ export default function Mermaid({ chart }: MermaidProps) {
         zIndex: 10
       }}>
         <button onClick={copyCode} className="secondary-btn-xs" title="Copy Code">📋</button>
+        <button onClick={copyEmbed} className="secondary-btn-xs" title="Copy Embed HTML">{'</>'}</button>
         <button onClick={downloadSVG} className="secondary-btn-xs" title="Download SVG">SVG</button>
         <button onClick={downloadPNG} className="primary-btn-sm" style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem' }} title="Download PNG">Download PNG</button>
+        {/* Zoom controls */}
+        <button onClick={zoomOut} className="secondary-btn-xs" title="Zoom out" style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1, padding: '0.25rem 0.55rem' }}>−</button>
         <button
           onClick={resetView}
           className="secondary-btn-xs"
-          title="Reset zoom (Scroll to zoom, drag to pan)"
-          style={{ fontSize: '0.75rem', padding: '0.35rem 0.6rem' }}
+          title="Reset zoom (drag to pan)"
+          style={{ fontSize: '0.72rem', padding: '0.35rem 0.5rem', minWidth: '3.2rem', textAlign: 'center' }}
         >
           🔍 {Math.round(zoom * 100)}%
         </button>
+        <button onClick={zoomIn} className="secondary-btn-xs" title="Zoom in" style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1, padding: '0.25rem 0.55rem' }}>+</button>
       </div>
 
       {/* Zoom/pan viewport */}
@@ -251,7 +269,6 @@ export default function Mermaid({ chart }: MermaidProps) {
           cursor: dragging.current ? 'grabbing' : 'grab',
           userSelect: 'none',
         }}
-        onWheel={onWheel}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}

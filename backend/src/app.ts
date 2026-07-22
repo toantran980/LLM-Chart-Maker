@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { generateDiagram } from './diagram';
+import { describeDiagram } from './llm';
 import { DiagramRequest } from './types';
 
 export function createApp() {
@@ -46,6 +47,21 @@ export function createApp() {
 
     const mermaid = await generateDiagram(body);
     return res.json({ mermaid });
+  });
+
+  app.post('/api/describe', async (req, res) => {
+    const { mermaid } = req.body;
+    if (!mermaid) {
+      return res.status(400).json({ error: 'Missing mermaid code' });
+    }
+    
+    try {
+      const description = await describeDiagram(mermaid);
+      return res.json({ description });
+    } catch (err: any) {
+      console.error('Describe error:', err);
+      return res.status(500).json({ error: err.message || 'Failed to describe diagram' });
+    }
   });
 
   return app;

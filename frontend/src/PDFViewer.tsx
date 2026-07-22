@@ -42,6 +42,8 @@ export default function PDFViewer({
   const [loading, setLoading] = useState(false);
   const [manualHighlights, setManualHighlights] = useState<Highlight[]>([]);
   const [numPages, setNumPages] = useState<number>(0);
+  const [fullPdfText, setFullPdfText] = useState<string>('');
+  const [isPdfTruncated, setIsPdfTruncated] = useState(false);
   const canvasRefs = useRef<Array<HTMLCanvasElement | null>>([]);
   const textLayerRefs = useRef<Array<HTMLDivElement | null>>([]);
 
@@ -86,6 +88,22 @@ export default function PDFViewer({
           }
         }
         setHighlights(allHighlights);
+
+        // Extract full document text in background for "Diagram Entire PDF"
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageStr = textContent.items.map((item: any) => item.str).join(' ');
+          fullText += pageStr + '\n\n';
+          if (fullText.length > 12000) {
+             setIsPdfTruncated(true);
+             fullText = fullText.substring(0, 12000) + '\n\n...[TRUNCATED]';
+             break;
+          }
+        }
+        setFullPdfText(fullText.trim());
+
         setLoading(false);
 
         // Render pages using IntersectionObserver for performance
@@ -245,6 +263,29 @@ export default function PDFViewer({
           >
             🚀 Generate Diagram from Selection
           </button>
+
+          <div style={{ margin: '1rem 0', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>OR</div>
+
+          <button
+            className="secondary-btn-xs"
+            style={{ width: '100%', padding: '0.75rem', fontSize: '0.9rem', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}
+            onClick={() => {
+              if (fullPdfText) {
+                requestDiagram({ text: fullPdfText, diagramType }, 'full');
+              } else {
+                alert("Please wait for the document to finish loading.");
+              }
+            }}
+            disabled={loading || !fullPdfText}
+          >
+            📄 Diagram Entire PDF
+          </button>
+          
+          {isPdfTruncated && (
+            <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '0.5rem', borderRadius: '4px', textAlign: 'center' }}>
+              ⚠️ Document is very long. Only the first ~12,000 characters will be sent to the LLM.
+            </div>
+          )}
         </div>
 
         {loading && (

@@ -12,10 +12,10 @@ Features sorted by difficulty. Ship the easy wins first, leave the hard ones for
 
 The LLM already knows all Mermaid diagram syntax — just expose more types in the UI.
 
-- [ ] Add to `shared/types.ts`: `'gantt' | 'er' | 'mindmap' | 'gitgraph'`
-- [ ] Add dropdown options in `Controls.tsx`
-- [ ] Hide direction picker for types that don't support it (gantt, er, mindmap, gitgraph)
-- [ ] Add direction rules in `llm.ts` for new types
+- [x] Add to `shared/types.ts`: `'gantt' | 'er' | 'mindmap' | 'gitgraph'`
+- [x] Add dropdown options in `Controls.tsx`
+- [x] Hide direction picker for types that don't support it (gantt, er, mindmap, gitgraph)
+- [x] Add direction rules in `llm.ts` for new types
 
 ```
 flowchart → existing ✅
@@ -32,11 +32,11 @@ gitgraph  → git branch history
 
 No backend needed. Pure frontend, zero new API calls.
 
-- [ ] Create `frontend/src/utils/history.ts` with `save / load / clear` helpers
-- [ ] Auto-save every generated diagram (Mermaid code + type + timestamp + label)
-- [ ] New `DiagramHistory` component: collapsible panel, last 20 entries
-- [ ] Click any entry → restores diagram instantly
-- [ ] "Clear History" button
+- [x] Create `frontend/src/utils/history.ts` with `save / load / clear` helpers
+- [x] Auto-save every generated diagram (Mermaid code + type + timestamp + label)
+- [x] New `DiagramHistory` component: collapsible panel, last 20 entries
+- [x] Click any entry → restores diagram instantly
+- [x] "Clear History" button
 
 ---
 
@@ -45,9 +45,9 @@ No backend needed. Pure frontend, zero new API calls.
 
 Mermaid ships 5 built-in themes — zero extra dependencies.
 
-- [ ] Add `diagramTheme` state in `App.tsx`
-- [ ] Pass theme to `Mermaid.tsx`, call `mermaid.initialize({ theme })` on change
-- [ ] Theme buttons in `Result.tsx`: `default | dark | forest | neutral | base`
+- [x] Add `diagramTheme` state in `App.tsx`
+- [x] Pass theme to `Mermaid.tsx`, call `mermaid.initialize({ theme })` on change
+- [x] Theme buttons in `Result.tsx`: `default | dark | forest | neutral | base`
 
 ---
 
@@ -56,9 +56,9 @@ Mermaid ships 5 built-in themes — zero extra dependencies.
 
 No server, no database. Pure client-side.
 
-- [ ] Add "Copy Embed" button to `Mermaid.tsx`
-- [ ] Serialize SVG → base64 encode → wrap in `<img src="data:image/svg+xml;base64,..." />`
-- [ ] Copy to clipboard with one click
+- [x] Add "Copy Embed" button to `Mermaid.tsx`
+- [x] Serialize SVG → base64 encode → wrap in `<img src="data:image/svg+xml;base64,..." />`
+- [x] Copy to clipboard with one click
 
 ---
 
@@ -67,8 +67,8 @@ No server, no database. Pure client-side.
 
 For large, complex diagrams, the rendered SVG often shrinks to fit the container and becomes unreadable.
 
-- [ ] Add zoom-in, zoom-out, and reset buttons next to the diagram.
-- [ ] Integrate mouse-wheel zoom and click-and-drag panning (e.g. using a library like `svg-pan-zoom` or simple mouse handlers).
+- [x] Add zoom-in, zoom-out, and reset buttons next to the diagram.
+- [x] Integrate mouse-wheel zoom and click-and-drag panning (e.g. using a library like `svg-pan-zoom` or simple mouse handlers).
 
 ---
 
@@ -77,9 +77,9 @@ For large, complex diagrams, the rendered SVG often shrinks to fit the container
 
 Give users the ability to manually tweak the Mermaid code directly without calling the LLM.
 
-- [ ] Add a collapsible "Raw Code View" panel.
-- [ ] Make the code editable with a debounced re-render loop.
-- [ ] Show syntax check validation feedback to prevent broken rendering.
+- [x] Add a collapsible "Raw Code View" panel.
+- [x] Make the code editable with a debounced re-render loop.
+- [x] Show syntax check validation feedback to prevent broken rendering.
 
 ---
 
@@ -88,11 +88,11 @@ Give users the ability to manually tweak the Mermaid code directly without calli
 
 The PDF renderer already loads every page. Just extract the text too.
 
-- [ ] In `PDFViewer.tsx`: loop `page.getTextContent()` across all pages
-- [ ] Concatenate all text, truncate to ~12,000 chars
-- [ ] Show a warning banner if the PDF was cut off
-- [ ] Add "📄 Diagram Entire PDF" button → sends full text to existing `/api/diagram`
-- [ ] No backend change needed
+- [x] In `PDFViewer.tsx`: loop `page.getTextContent()` across all pages
+- [x] Concatenate all text, truncate to ~12,000 chars
+- [x] Show a warning banner if the PDF was cut off
+- [x] Add "📄 Diagram Entire PDF" button → sends full text to existing `/api/diagram`
+- [x] No backend change needed
 
 ---
 
@@ -101,9 +101,9 @@ The PDF renderer already loads every page. Just extract the text too.
 
 New endpoint + small UI. Useful for accessibility and documentation.
 
-- [ ] `POST /api/describe` backend route — LLM reads Mermaid code → returns plain-English summary
-- [ ] "🔍 Describe this diagram" button in `Result.tsx`
-- [ ] Response shown in a collapsible panel below the diagram
+- [x] `POST /api/describe` backend route — LLM reads Mermaid code → returns plain-English summary
+- [x] "🔍 Describe this diagram" button in `Result.tsx`
+- [x] Response shown in a collapsible panel below the diagram
 
 ---
 

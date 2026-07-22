@@ -8,7 +8,9 @@ import { Analytics } from '@vercel/analytics/react'
 import EditorArea from './components/EditorArea';
 import Controls from './components/Controls';
 import Result from './components/Result';
+import DiagramHistory from './components/DiagramHistory';
 import PDFViewer from './PDFViewer';
+import { saveHistoryEntry, type HistoryEntry } from './utils/history';
 
 import type { DiagramType } from '@shared/types';
 
@@ -27,6 +29,7 @@ export default function App() {
   const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
   const [direction, setDirection] = useState<string>('auto');
   const [mermaid, setMermaid] = useState<string>('');
+  const [historyRefresh, setHistoryRefresh] = useState(0);
   const [fallbackMode, setFallbackMode] = useState<boolean>(false);
   const [loadingFull, setLoadingFull] = useState(false);
   const [loadingSelection, setLoadingSelection] = useState(false);
@@ -78,6 +81,8 @@ export default function App() {
       const data = await postDiagram({ ...payload, text: trimmedText });
       if (data?.mermaid?.trim()) {
         setMermaid(data.mermaid);
+        saveHistoryEntry({ mermaid: data.mermaid, diagramType: payload.diagramType });
+        setHistoryRefresh(prev => prev + 1);
       }
     } catch (err) {
       console.error('Diagram generation error:', err);
@@ -174,7 +179,14 @@ export default function App() {
         </section>
       )}
 
-      <Result mermaid={mermaid} />
+      <Result mermaid={mermaid} setMermaid={setMermaid} />
+      <DiagramHistory 
+        refreshTrigger={historyRefresh} 
+        onRestore={(entry: HistoryEntry) => {
+          setMermaid(entry.mermaid);
+          setDiagramType(entry.diagramType);
+        }} 
+      />
       <Analytics />
     </div>
   );

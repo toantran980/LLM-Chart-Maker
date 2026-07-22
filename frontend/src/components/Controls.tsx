@@ -49,6 +49,10 @@ export default function Controls({
             <option value="flowchart">📊 Flowchart</option>
             <option value="timeline">⏳ Timeline</option>
             <option value="rules">🛡️ Rules Map</option>
+            <option value="gantt">📅 Gantt Chart</option>
+            <option value="er">🗃️ ER Diagram</option>
+            <option value="mindmap">🧠 Mindmap</option>
+            <option value="gitgraph">🌿 GitGraph</option>
           </select>
         </div>
 

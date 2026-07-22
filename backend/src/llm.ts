@@ -12,8 +12,9 @@ function buildPrompt(req: DiagramRequest & { direction?: string }) {
   const isAuto = !direction || direction === AUTO;
 
   // Direction instruction block: either tell LLM to choose, or force the user's pick
-  const directionRule = diagramType === 'timeline'
-    ? '- Use the appropriate Mermaid keyword for this diagram type (e.g. sequenceDiagram, timeline) with no direction.'
+  const noDirectionTypes = ['timeline', 'gantt', 'er', 'mindmap', 'gitgraph'];
+  const directionRule = noDirectionTypes.includes(diagramType)
+    ? `- Use the appropriate Mermaid keyword for this diagram type (e.g. sequenceDiagram, timeline, gantt, erDiagram, mindmap, gitGraph) with no direction.`
     : isAuto
       ? `- Choose the BEST direction for this flowchart based on the content structure:
   - Use LR (left→right) for: pipelines, workflows, processes, step-by-step flows, data pipelines
@@ -56,6 +57,37 @@ export async function generateDiagramWithLLM(req: DiagramRequest): Promise<strin
     messages: [
       { role: 'system', content: 'You are a precise Mermaid diagram generator. You only output valid Mermaid code within markdown blocks.' },
       { role: 'user', content: prompt }
+    ],
+    temperature: 0.1,
+    max_completion_tokens: 1000
+  };
+
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${OPENAI_API_KEY}`
+  };
+
+  interface OpenAIResponse {
+    choices?: { message?: { content?: string } }[];
+  }
+
+  const resp = await axios.post<OpenAIResponse>(OPENAI_API_URL, payload, { headers });
+  const content = resp.data?.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Empty response from LLM');
+  return content.trim();
+}
+
+export async function describeDiagram(mermaid: string): Promise<string> {
+  if (!OPENAI_API_KEY) {
+    console.warn('[AI] No OPENAI_API_KEY found. Returning fallback description.');
+    return "This is a fallback description. Please set your OPENAI_API_KEY in the backend .env file to enable AI-powered diagram descriptions.\n\nThe diagram contains the following raw code:\n" + mermaid;
+  }
+
+  const payload = {
+    model: 'gpt-5.4-mini',
+    messages: [
+      { role: 'system', content: 'You are an expert at understanding Mermaid diagrams. Describe the provided diagram in plain English. Keep it concise, structured, and easy to understand.' },
+      { role: 'user', content: `Here is a Mermaid diagram:\n\n\`\`\`mermaid\n${mermaid}\n\`\`\`\n\nPlease describe what this diagram represents.` }
     ],
     temperature: 0.1,
     max_completion_tokens: 1000
