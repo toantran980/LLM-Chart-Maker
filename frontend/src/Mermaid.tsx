@@ -10,9 +10,7 @@ interface MermaidProps {
 }
 
 const VALID_THEMES: MermaidTheme[] = [
-  'default', 'base', 'dark', 'forest', 'neutral',
-  'neo', 'neo-dark', 'redux', 'redux-dark',
-  'redux-color', 'redux-dark-color', 'null'
+  'default', 'base', 'dark', 'forest', 'neutral', 'null'
 ];
 
 function isMermaidTheme(value: string): value is MermaidTheme {
