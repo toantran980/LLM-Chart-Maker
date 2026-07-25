@@ -13,34 +13,34 @@ function buildPrompt(req: DiagramRequest & { direction?: string }) {
 
   // Direction instruction block: either tell LLM to choose, or force the user's pick
   const noDirectionTypes = ['timeline', 'gantt', 'er', 'mindmap', 'gitgraph'];
+  // 
+  
   const directionRule = noDirectionTypes.includes(diagramType)
-    ? `- This diagram type has no directional layout — just use the correct Mermaid declaration keyword for "${diagramType}" (e.g. "gantt", "erDiagram", "mindmap", "gitGraph") and omit any direction argument.`
-    : isAuto
-      ? `- Pick the direction that best fits the content's shape, then write the opening line as "flowchart <direction>":
-  - LR (left→right): pipelines, workflows, multi-step processes, sequential/data flows
-  - TD (top→bottom): org charts, class/type hierarchies, trees, parent-child or nested structures
-  - RL / BT: only if the content is naturally reversed (e.g. bottom-up build order, right-to-left reading order)
-  - Default to TD if the structure is ambiguous.`
-      : `- The user explicitly chose direction "${direction}". Use exactly: flowchart ${direction} 
-         — do not override this even if another direction seems better suited.`;
+  ? `- No directional layout applies. Use the correct Mermaid keyword for "${diagramType}" (e.g. "gantt", "erDiagram", "mindmap", "gitGraph") and omit any direction.`
+  : isAuto
+    ? `- Choose the direction that best fits the content, then open with "flowchart <direction>":
+  - LR: pipelines, workflows, sequential/multi-step processes
+  - TD: hierarchies, org charts, trees, parent-child structures
+  - RL / BT: only for naturally reversed flows (e.g. bottom-up builds, right-to-left order)
+  - Default to TD if unclear.`
+    : `- Direction is fixed by the user: "${direction}". Always output "flowchart ${direction}", even if another direction seems better.`;
 
   const directive = `
   Convert the input below into a Mermaid ${diagramType} diagram.
 
   Output rules:
-    - Return ONLY a single fenced Mermaid code block:
-    \`\`\`mermaid
-    ...diagram...
-    \`\`\`
-    - No prose, no explanations, no markdown headers before or after the block.
+  - Return ONLY one fenced Mermaid block, nothing else (no prose, no headers):
+  \`\`\`mermaid
+  ...diagram...
+  \`\`\`
   ${directionRule}
-    - Escape double quotes inside labels using #quot; (e.g. A["A label with #quot;quotes#quot;"]).
-    - Avoid unescaped special characters ([], (), {}, >) inside labels — quote the label instead if it needs them.
-    - Node/edge IDs must be valid Mermaid identifiers (no spaces or reserved words); put display text in labels, not IDs.
-    - Output must be syntactically valid Mermaid v11 — no dangling links, unclosed subgraphs, or duplicate node IDs.
+  - Escape double quotes in labels as #quot; (e.g. A["A label with #quot;quotes#quot;"]).
+  - Quote any label containing special characters ([], (), {}, >) instead of escaping them individually.
+  - Node/edge IDs must be valid identifiers with no spaces or reserved words; keep display text in labels.
+  - Output must be valid Mermaid v11: no dangling links, unclosed subgraphs, or duplicate IDs.
 
   Input:
-    ${text}
+  ${text}
   `;
 
   const userInstruction = instruction ? `User instruction: ${instruction}\n` : '';
