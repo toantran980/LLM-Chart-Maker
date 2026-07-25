@@ -23,7 +23,7 @@ function buildPrompt(req: DiagramRequest & { direction?: string }) {
   - TD: hierarchies, org charts, trees, parent-child structures
   - RL / BT: only for naturally reversed flows (e.g. bottom-up builds, right-to-left order)
   - Default to TD if unclear.`
-    : `- Direction is fixed by the user: "${direction}". Always output "flowchart ${direction}", even if another direction seems better.`;
+    : `- Direction is fixed by the user: "${direction}". Always output "flowchart ${direction}", even another direction seems better.`;
 
   const directive = `
   Convert the input below into a Mermaid ${diagramType} diagram.
