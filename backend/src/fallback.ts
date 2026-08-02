@@ -1,14 +1,9 @@
-import { DiagramRequest } from '../../shared/types';
+import type { DiagramRequest } from '../../shared/types';
 
 const DEFAULT_DIRECTION = 'TD';
 
 function escapeForMermaid(s: string) {
   return s.replace(/"/g, '#quot;').replace(/\n/g, ' ');
-}
-
-function shorten(s: string, n: number) {
-  if (s.length <= n) return s;
-  return s.slice(0, n - 3) + '...';
 }
 
 export function fallbackDiagram(req: DiagramRequest & { direction?: string }): string {
@@ -90,7 +85,7 @@ export function fallbackDiagram(req: DiagramRequest & { direction?: string }): s
 
   limitedLines.forEach((line, i) => {
     const id = `A${i + 1}`;
-    const cleanLabel = escapeForMermaid(shorten(line, 40)).replace(/[\[\]\(\)\{\}]/g, '');
+    const cleanLabel = escapeForMermaid(line).replace(/[\[\]\(\)\{\}]/g, '');
     nodes.push(`${id}["${cleanLabel}"]`);
     if (i > 0) links.push(`A${i} --> ${id}`);
   });

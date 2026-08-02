@@ -251,21 +251,25 @@ button:disabled {
 
 /* File Upload Component */
 .modern-upload-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.85rem;
   background: var(--card-bg);
   border: 2px dashed var(--card-border);
-  padding: 0.9rem 1.75rem;
+  padding: 0.95rem 1.8rem;
   border-radius: var(--radius-sm);
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--text-primary);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  min-height: 52px;
+  min-height: 56px;
   box-sizing: border-box;
   backdrop-filter: blur(5px);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
 }
 
 .modern-upload-btn:hover {
@@ -517,13 +521,14 @@ body.dark-mode .section-result {
 /* PDF Viewer */
 .mermaid-container {
   width: 100%;
-  min-height: 320px;
+  min-height: 360px;
   overflow-x: auto;
+  overflow-y: auto;
   background: white;
   border-radius: var(--radius-md);
-  padding: 2rem;
+  padding: 2rem 1.25rem;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   box-sizing: border-box;
   box-shadow: var(--shadow-md);

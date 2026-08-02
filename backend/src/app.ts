@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { generateDiagram } from './diagram';
 import { describeDiagram } from './llm';
-import { DiagramRequest } from './types';
+import type { DiagramRequest } from '../../shared/types';
 
 export function createApp() {
   const app = express();

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { DiagramRequest } from '../../shared/types';
+import type { DiagramRequest } from '../../shared/types';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';

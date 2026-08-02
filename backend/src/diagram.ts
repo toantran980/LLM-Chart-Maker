@@ -1,6 +1,6 @@
 import { generateDiagramWithLLM } from './llm';
 import { fallbackDiagram } from './fallback';
-import { DiagramRequest } from './types';
+import type { DiagramRequest } from '../../shared/types';
 
 export async function generateDiagram(req: DiagramRequest): Promise<string> {
   try {

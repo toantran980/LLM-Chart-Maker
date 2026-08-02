@@ -51,6 +51,16 @@ describe('fallbackDiagram', () => {
     expect(result).toMatch(/flowchart LR/);
   });
 
+  it('preserves the full sentence in fallback flowchart labels', () => {
+    const result = fallbackDiagram({
+      text: 'This sentence should stay intact in the diagram label.',
+      diagramType: 'flowchart',
+    });
+
+    expect(result).toContain('This sentence should stay intact in the diagram label.');
+    expect(result).not.toContain('...');
+  });
+
   it('escapes double quotes in labels', () => {
     const result = fallbackDiagram({
       text: 'Say "hello"',

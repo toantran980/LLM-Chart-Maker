@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
 import type { MermaidConfig } from 'mermaid';
+import { getAutoZoom } from './utils/diagram';
 
 type MermaidTheme = NonNullable<MermaidConfig['theme']>;
 
@@ -39,12 +40,13 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: st
       nodeRadius: '12'
     },
     flowchart: {
-      useMaxWidth: true,
+      useMaxWidth: false,
       htmlLabels: true,
       curve: 'basis',
-      padding: 20,
-      nodeSpacing: 60,
-      rankSpacing: 60
+      padding: 24,
+      nodeSpacing: 70,
+      rankSpacing: 70,
+      diagramPadding: 24
     }
   });
 
@@ -58,7 +60,7 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: st
     // Inject custom premium styles
     const style = document.createElement('style');
     style.innerHTML = `
-      .mermaid svg { background: transparent !important; }
+      .mermaid svg { background: transparent !important; max-width: none !important; width: 100% !important; height: auto !important; }
       .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon, .mermaid .node path {
         fill: #6366f1 !important;
         stroke: #4338ca !important;
@@ -223,10 +225,15 @@ export default function Mermaid({ chart, theme = 'base' }: MermaidProps) {
   const dragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
 
-  const resetView = useCallback(() => {
-    setZoom(1);
+  useEffect(() => {
+    setZoom(getAutoZoom(chart));
     setPan({ x: 0, y: 0 });
-  }, []);
+  }, [chart]);
+
+  const resetView = useCallback(() => {
+    setZoom(getAutoZoom(chart));
+    setPan({ x: 0, y: 0 });
+  }, [chart]);
 
   const zoomIn = useCallback(() => setZoom(prev => Math.min(5, Math.round((prev + 0.25) * 100) / 100)), []);
   const zoomOut = useCallback(() => setZoom(prev => Math.max(0.25, Math.round((prev - 0.25) * 100) / 100)), []);

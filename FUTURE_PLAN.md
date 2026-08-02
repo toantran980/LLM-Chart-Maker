@@ -5,17 +5,19 @@ Features sorted by difficulty. Ship the easy wins first, leave the hard ones for
 ---
 
 ## 🟢 Easy Wins — Do These Now
+
 > Small scope, high value, no new infrastructure needed.
 
 ### 1. More Diagram Types
+
 **Effort:** ~2 hrs | **Value:** ⭐⭐⭐⭐⭐
 
 The LLM already knows all Mermaid diagram syntax — just expose more types in the UI.
 
-- [x] Add to `shared/types.ts`: `'gantt' | 'er' | 'mindmap' | 'gitgraph'`
-- [x] Add dropdown options in `Controls.tsx`
-- [x] Hide direction picker for types that don't support it (gantt, er, mindmap, gitgraph)
-- [x] Add direction rules in `llm.ts` for new types
+- [X] Add to `shared/types.ts`: `'gantt' | 'er' | 'mindmap' | 'gitgraph'`
+- [X] Add dropdown options in `Controls.tsx`
+- [X] Hide direction picker for types that don't support it (gantt, er, mindmap, gitgraph)
+- [X] Add direction rules in `llm.ts` for new types
 
 ```
 flowchart → existing ✅
@@ -28,89 +30,98 @@ gitgraph  → git branch history
 ---
 
 ### 2. Diagram History (localStorage)
+
 **Effort:** ~3 hrs | **Value:** ⭐⭐⭐⭐⭐
 
 No backend needed. Pure frontend, zero new API calls.
 
-- [x] Create `frontend/src/utils/history.ts` with `save / load / clear` helpers
-- [x] Auto-save every generated diagram (Mermaid code + type + timestamp + label)
-- [x] New `DiagramHistory` component: collapsible panel, last 20 entries
-- [x] Click any entry → restores diagram instantly
-- [x] "Clear History" button
+- [X] Create `frontend/src/utils/history.ts` with `save / load / clear` helpers
+- [X] Auto-save every generated diagram (Mermaid code + type + timestamp + label)
+- [X] New `DiagramHistory` component: collapsible panel, last 20 entries
+- [X] Click any entry → restores diagram instantly
+- [X] "Clear History" button
 
 ---
 
 ### 3. Diagram Theme Switcher
+
 **Effort:** ~1 hr | **Value:** ⭐⭐⭐⭐
 
 Mermaid ships 5 built-in themes — zero extra dependencies.
 
-- [x] Add `diagramTheme` state in `App.tsx`
-- [x] Pass theme to `Mermaid.tsx`, call `mermaid.initialize({ theme })` on change
-- [x] Theme buttons in `Result.tsx`: `default | dark | forest | neutral | base`
+- [X] Add `diagramTheme` state in `App.tsx`
+- [X] Pass theme to `Mermaid.tsx`, call `mermaid.initialize({ theme })` on change
+- [X] Theme buttons in `Result.tsx`: `default | dark | forest | neutral | base`
 
 ---
 
 ### 4. Copy Embed Code
+
 **Effort:** ~1 hr | **Value:** ⭐⭐⭐
 
 No server, no database. Pure client-side.
 
-- [x] Add "Copy Embed" button to `Mermaid.tsx`
-- [x] Serialize SVG → base64 encode → wrap in `<img src="data:image/svg+xml;base64,..." />`
-- [x] Copy to clipboard with one click
+- [X] Add "Copy Embed" button to `Mermaid.tsx`
+- [X] Serialize SVG → base64 encode → wrap in `<img src="data:image/svg+xml;base64,..." />`
+- [X] Copy to clipboard with one click
 
 ---
 
 ### 5. Interactive Zoom & Pan (UX)
+
 **Effort:** ~2 hrs | **Value:** ⭐⭐⭐⭐⭐
 
 For large, complex diagrams, the rendered SVG often shrinks to fit the container and becomes unreadable.
 
-- [x] Add zoom-in, zoom-out, and reset buttons next to the diagram.
-- [x] Integrate mouse-wheel zoom and click-and-drag panning (e.g. using a library like `svg-pan-zoom` or simple mouse handlers).
+- [X] Add zoom-in, zoom-out, and reset buttons next to the diagram.
+- [X] Integrate mouse-wheel zoom and click-and-drag panning (e.g. using a library like `svg-pan-zoom` or simple mouse handlers).
 
 ---
 
 ### 6. Manual Code Editor & Live Preview
+
 **Effort:** ~2 hrs | **Value:** ⭐⭐⭐⭐
 
 Give users the ability to manually tweak the Mermaid code directly without calling the LLM.
 
-- [x] Add a collapsible "Raw Code View" panel.
-- [x] Make the code editable with a debounced re-render loop.
-- [x] Show syntax check validation feedback to prevent broken rendering.
+- [X] Add a collapsible "Raw Code View" panel.
+- [X] Make the code editable with a debounced re-render loop.
+- [X] Show syntax check validation feedback to prevent broken rendering.
 
 ---
 
 ### 7. Full PDF Text Extraction ("Diagram Entire PDF")
+
 **Effort:** ~2 hrs | **Value:** ⭐⭐⭐⭐
 
 The PDF renderer already loads every page. Just extract the text too.
 
-- [x] In `PDFViewer.tsx`: loop `page.getTextContent()` across all pages
-- [x] Concatenate all text, truncate to ~12,000 chars
-- [x] Show a warning banner if the PDF was cut off
-- [x] Add "📄 Diagram Entire PDF" button → sends full text to existing `/api/diagram`
-- [x] No backend change needed
+- [X] In `PDFViewer.tsx`: loop `page.getTextContent()` across all pages
+- [X] Concatenate all text, truncate to ~12,000 chars
+- [X] Show a warning banner if the PDF was cut off
+- [X] Add "📄 Diagram Entire PDF" button → sends full text to existing `/api/diagram`
+- [X] No backend change needed
 
 ---
 
 ### 8. Diagram-to-Text (Describe)
+
 **Effort:** ~2 hrs | **Value:** ⭐⭐⭐
 
 New endpoint + small UI. Useful for accessibility and documentation.
 
-- [x] `POST /api/describe` backend route — LLM reads Mermaid code → returns plain-English summary
-- [x] "🔍 Describe this diagram" button in `Result.tsx`
-- [x] Response shown in a collapsible panel below the diagram
+- [X] `POST /api/describe` backend route — LLM reads Mermaid code → returns plain-English summary
+- [X] "🔍 Describe this diagram" button in `Result.tsx`
+- [X] Response shown in a collapsible panel below the diagram
 
 ---
 
 ## 🟡 Medium Effort — Do These Later
+
 > Meaningful work but no new infrastructure required.
 
 ### 9. Iterative Diagram Refinement
+
 **Effort:** ~5 hrs | **Value:** ⭐⭐⭐⭐⭐
 
 The highest-value feature. Makes diagram generation conversational.
@@ -123,6 +134,7 @@ The highest-value feature. Makes diagram generation conversational.
 ---
 
 ### 10. LLM Self-Healing / Auto-Fixer
+
 **Effort:** ~3 hrs | **Value:** ⭐⭐⭐⭐
 
 Mermaid code generated by LLMs sometimes has syntax errors (mismatched brackets, unescaped characters).
@@ -135,32 +147,38 @@ Mermaid code generated by LLMs sometimes has syntax errors (mismatched brackets,
 ---
 
 ### 11. Better README + Live Demo Link
+
 **Effort:** ~1 hr | **Value:** ⭐⭐⭐⭐ (resume value)
 
-- [ ] Add a GIF or screenshot of the tool in action to `README.md`
-- [ ] Add the Vercel live URL prominently at the top
-- [ ] Add a "Try it" badge
+- [ ] Add a GIF or screenshot of the tool in to `README.md`
+- [X] Add the Vercel live URL prominently at the top
+- [X] Add a "Try it" badge
 
 ---
 
 ## 🔴 Hard / Deferred — Set Aside for Now
+
 > Requires new infrastructure or significant architecture changes. Not worth it yet.
 
 ### Real Shareable URLs
+
 **Why hard:** Needs a database (Postgres/Redis) to store diagrams by ID, a `GET /api/diagram/:id`
 endpoint, and frontend routing changes to load from URL params.
 **Revisit when:** You add a backend database for any other reason.
 
 ### User Accounts & Auth
+
 **Why hard:** Full auth flow (signup, login, JWT/sessions), user-scoped history, database required.
 **Revisit when:** You have real users who need persistent accounts.
 
 ### RAG / Chat with PDF
+
 **Why hard:** Requires text chunking, OpenAI embeddings API, vector similarity search, a vector
 database (Pinecone/Supabase pgvector), and a chat UI. High cost per request.
 **Revisit when:** You want to pivot toward a document intelligence product.
 
 ### Self-hosted LLM (no API key)
+
 **Why hard:** Needs a GPU server, model serving (Ollama/vLLM), and prompt tuning to match
 OpenAI output quality.
 **Revisit when:** OpenAI API costs become a real problem at scale.
@@ -191,20 +209,20 @@ Week 3+  (~8 hrs)
 
 ## Summary Table
 
-| Feature | Effort | Value | Priority |
-|---|---|---|---|
-| More diagram types | Easy | ⭐⭐⭐⭐⭐ | Now |
-| Diagram history | Easy | ⭐⭐⭐⭐⭐ | Now |
-| Theme switcher | Easy | ⭐⭐⭐⭐ | Now |
-| Copy embed code | Easy | ⭐⭐⭐ | Now |
-| Interactive Zoom & Pan | Easy | ⭐⭐⭐⭐⭐ | Now |
-| Manual Code Editor | Easy | ⭐⭐⭐⭐ | Now |
-| Full PDF extraction | Easy | ⭐⭐⭐⭐ | Now |
-| Diagram-to-text | Easy | ⭐⭐⭐ | Now |
-| Iterative refinement | Medium | ⭐⭐⭐⭐⭐ | Later |
-| LLM Self-Healing | Medium | ⭐⭐⭐⭐ | Later |
-| Better README | Medium | ⭐⭐⭐⭐ | Later |
-| Shareable URLs | Hard | ⭐⭐⭐ | Deferred |
-| User auth | Hard | ⭐⭐⭐ | Deferred |
-| RAG / Chat PDF | Hard | ⭐⭐ | Deferred |
-| Self-hosted LLM | Hard | ⭐⭐ | Deferred |
+| Feature                | Effort | Value      | Priority |
+| ---------------------- | ------ | ---------- | -------- |
+| More diagram types     | Easy   | ⭐⭐⭐⭐⭐ | Now      |
+| Diagram history        | Easy   | ⭐⭐⭐⭐⭐ | Now      |
+| Theme switcher         | Easy   | ⭐⭐⭐⭐   | Now      |
+| Copy embed code        | Easy   | ⭐⭐⭐     | Now      |
+| Interactive Zoom & Pan | Easy   | ⭐⭐⭐⭐⭐ | Now      |
+| Manual Code Editor     | Easy   | ⭐⭐⭐⭐   | Now      |
+| Full PDF extraction    | Easy   | ⭐⭐⭐⭐   | Now      |
+| Diagram-to-text        | Easy   | ⭐⭐⭐     | Now      |
+| Iterative refinement   | Medium | ⭐⭐⭐⭐⭐ | Later    |
+| LLM Self-Healing       | Medium | ⭐⭐⭐⭐   | Later    |
+| Better README          | Medium | ⭐⭐⭐⭐   | Later    |
+| Shareable URLs         | Hard   | ⭐⭐⭐     | Deferred |
+| User auth              | Hard   | ⭐⭐⭐     | Deferred |
+| RAG / Chat PDF         | Hard   | ⭐⭐       | Deferred |
+| Self-hosted LLM        | Hard   | ⭐⭐       | Deferred |

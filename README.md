@@ -1,8 +1,18 @@
 # LLM Chart Maker
 
+![Demo Screenshot](public/demo.png)
+
 LLM Chart Maker is a production-ready, full-stack monorepo application that transforms natural language text and PDF document contents into beautiful, interactive Mermaid diagrams. It supports selecting text snippets from uploaded documents to construct tailored visual process flows, timelines, rules, and mindmaps.
 
 Live Application: https://llm-chart-maker-frontend.vercel.app/
+
+[![Try it on Vercel](<https://img.shields.io/badge/Try%20it-Vercel-000000?style=for-the-badge&logo=vercel>)](https://llm-chart-maker-frontend.vercel.app/)
+
+## Demo (will be back)
+
+<!-- Replace ./public/demo.png with an actual recording or screenshot. I can generate/export this if you want. -->
+
+![Demo Screenshot](public/demo.png)
 
 ---
 
@@ -43,30 +53,40 @@ The project is structured as a TypeScript monorepo with shared data contracts to
 ## Local Development
 
 ### 1. Install Dependencies
+
 Run from the project root to install all workspaces:
+
 ```bash
 npm install
 ```
 
 ### 2. Configure Environment variables
+
 Create a .env file in the project root:
+
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 ### 3. Run Dev Services
+
 Start both frontend (Vite) and backend (Express) concurrently:
+
 ```bash
 npm run dev
 ```
+
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:4173 (Health check: /health)
 
 ### Docker Setup
+
 To spin up the entire application stack in containers:
+
 ```bash
 docker compose up --build
 ```
+
 Then visit http://localhost.
 
 ---
@@ -78,4 +98,3 @@ This application is configured for Continuous Deployment:
 1. Frontend: Hosted on Vercel configured with the frontend root directory and linked to the Render backend via VITE_API_BASE.
 2. Backend: Deployed on Render (Node.js Web Service) referencing the backend root directory.
 3. Security: CORS is restricted dynamically using the ALLOWED_ORIGIN environment variable pointing to the Vercel domain, keeping API credentials safely on the backend server.
-
