@@ -407,6 +407,7 @@ body.dark-mode .section-result {
   font-weight: 800;
   margin-bottom: 0.25rem;
   background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
