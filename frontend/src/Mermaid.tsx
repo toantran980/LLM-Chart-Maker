@@ -8,6 +8,7 @@ type MermaidTheme = NonNullable<MermaidConfig['theme']>;
 interface MermaidProps {
   chart: string;
   theme?: string;
+  onError?: (error: Error) => void;
 }
 
 const VALID_THEMES: MermaidTheme[] = [
@@ -92,7 +93,7 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: st
   }
 }
 
-export default function Mermaid({ chart, theme = 'base' }: MermaidProps) {
+export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -108,6 +109,7 @@ export default function Mermaid({ chart, theme = 'base' }: MermaidProps) {
 
     renderMermaid(chart, ref.current, theme).catch((err) => {
       if (ref.current) {
+        const message = err instanceof Error ? err.message : String(err);
         ref.current.innerHTML = `
           <div class="mermaid-error-box" style="
             color: #ef4444; 
@@ -133,13 +135,16 @@ export default function Mermaid({ chart, theme = 'base' }: MermaidProps) {
                 border-radius: 6px;
                 border: 1px solid #fecaca;
                 font-size: 0.85rem;
-              ">${err?.message || 'Unknown syntax error'}</pre>
+              ">${message || 'Unknown syntax error'}</pre>
             </details>
           </div>
         `;
       }
+      if (onError) {
+        onError(err instanceof Error ? err : new Error(String(err)));
+      }
     });
-  }, [chart, theme]);
+  }, [chart, theme, onError]);
 
   const downloadSVG = () => {
     if (!ref.current) return;

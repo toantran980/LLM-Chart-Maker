@@ -21,6 +21,9 @@ export default function EditorArea({ editableRef, text, setText, uploadedFile, s
           className="main-textarea"
           contentEditable
           suppressContentEditableWarning
+          role="textbox"
+          aria-multiline="true"
+          aria-label="Editable source text for diagram generation"
           onInput={e => setText((e.target as HTMLDivElement).innerText)}
         />
         {!text && (

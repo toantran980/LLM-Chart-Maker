@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { generateDiagram } from './diagram';
+import { generateDiagram, refineDiagram, fixMermaid } from './diagram';
 import { describeDiagram } from './llm';
 import type { DiagramRequest } from '../../shared/types';
 
@@ -47,6 +47,36 @@ export function createApp() {
 
     const mermaid = await generateDiagram(body);
     return res.json({ mermaid });
+  });
+
+  app.post('/api/refine', async (req, res) => {
+    const { currentDiagram, instruction, diagramType } = req.body;
+    if (!currentDiagram || !instruction || !diagramType) {
+      return res.status(400).json({ error: 'Missing currentDiagram, instruction, or diagramType' });
+    }
+
+    try {
+      const mermaid = await refineDiagram({ currentDiagram, instruction, diagramType });
+      return res.json({ mermaid });
+    } catch (err: any) {
+      console.error('Refine error:', err);
+      return res.status(500).json({ error: err.message || 'Failed to refine diagram' });
+    }
+  });
+
+  app.post('/api/fix', async (req, res) => {
+    const { mermaid, error } = req.body;
+    if (!mermaid || !error) {
+      return res.status(400).json({ error: 'Missing mermaid or error details' });
+    }
+
+    try {
+      const fixed = await fixMermaid({ mermaid, error });
+      return res.json({ mermaid: fixed });
+    } catch (err: any) {
+      console.error('Fix error:', err);
+      return res.status(500).json({ error: err.message || 'Failed to fix Mermaid code' });
+    }
   });
 
   app.post('/api/describe', async (req, res) => {

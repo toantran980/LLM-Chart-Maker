@@ -4,12 +4,32 @@ export function getApiBase(): string {
   return (import.meta.env.VITE_API_BASE ?? '').replace(/\/$/, '');
 }
 
-export type DiagramPayload = { text: string; diagramType: DiagramType; instruction?: string };
+export type DiagramPayload = { text: string; diagramType: DiagramType; direction?: string; instruction?: string };
 
 // Post a diagram generation request to the backend API
 export async function postDiagram(payload: DiagramPayload) {
   const base = getApiBase();
   const res = await fetch(`${base}/api/diagram`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+export async function postRefine(payload: { currentDiagram: string; instruction: string; diagramType: DiagramType }) {
+  const base = getApiBase();
+  const res = await fetch(`${base}/api/refine`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+export async function postFix(payload: { mermaid: string; error: string }) {
+  const base = getApiBase();
+  const res = await fetch(`${base}/api/fix`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

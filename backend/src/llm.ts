@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { DiagramRequest } from '../../shared/types';
+import type { DiagramRequest, DiagramType } from '../../shared/types';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
@@ -47,6 +47,31 @@ function buildPrompt(req: DiagramRequest & { direction?: string }) {
   return `${userInstruction}${directive}`.trim();
 }
 
+function buildRefinePrompt(req: { currentDiagram: string; instruction: string; diagramType: DiagramType }) {
+  return `Update the Mermaid ${req.diagramType} diagram below according to the user's instruction. Return ONLY a single fenced Mermaid block, nothing else.
+
+User instruction: ${req.instruction}
+
+Current diagram:
+\`\`\`mermaid
+${req.currentDiagram}
+\`\`\`
+`;
+}
+
+function buildFixPrompt(req: { mermaid: string; error: string }) {
+  return `The following Mermaid code failed to render due to this error:
+${req.error}
+
+Please fix only the Mermaid syntax and return the corrected diagram as a single fenced Mermaid block. Do not add prose or explanation.
+
+Broken diagram:
+\`\`\`mermaid
+${req.mermaid}
+\`\`\`
+`;
+}
+
 export async function generateDiagramWithLLM(req: DiagramRequest): Promise<string> {
   if (!OPENAI_API_KEY) {
     throw new Error('OpenAI API key is missing. Please set OPENAI_API_KEY in your .env file.');
@@ -62,6 +87,66 @@ export async function generateDiagramWithLLM(req: DiagramRequest): Promise<strin
     ],
     temperature: 0.1,
     max_completion_tokens: 1000
+  };
+
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${OPENAI_API_KEY}`
+  };
+
+  interface OpenAIResponse {
+    choices?: { message?: { content?: string } }[];
+  }
+
+  const resp = await axios.post<OpenAIResponse>(OPENAI_API_URL, payload, { headers });
+  const content = resp.data?.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Empty response from LLM');
+  return content.trim();
+}
+
+export async function refineDiagramWithLLM(req: { currentDiagram: string; instruction: string; diagramType: DiagramType }): Promise<string> {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OpenAI API key is missing. Please set OPENAI_API_KEY in your .env file.');
+  }
+
+  const payload = {
+    model: 'gpt-5.4-mini',
+    messages: [
+      { role: 'system', content: 'You are a precise Mermaid diagram editor. You only output valid Mermaid code within markdown blocks.' },
+      { role: 'user', content: buildRefinePrompt(req) }
+    ],
+    temperature: 0.1,
+    max_completion_tokens: 1000
+  };
+
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${OPENAI_API_KEY}`
+  };
+
+  interface OpenAIResponse {
+    choices?: { message?: { content?: string } }[];
+  }
+
+  const resp = await axios.post<OpenAIResponse>(OPENAI_API_URL, payload, { headers });
+  const content = resp.data?.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Empty response from LLM');
+  return content.trim();
+}
+
+export async function fixMermaidWithLLM(req: { mermaid: string; error: string }): Promise<string> {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OpenAI API key is missing. Please set OPENAI_API_KEY in your .env file.');
+  }
+
+  const payload = {
+    model: 'gpt-5.4-mini',
+    messages: [
+      { role: 'system', content: 'You are a Mermaid syntax fixer. You only output corrected Mermaid code inside a fenced markdown block.' },
+      { role: 'user', content: buildFixPrompt(req) }
+    ],
+    temperature: 0.1,
+    max_completion_tokens: 500
   };
 
   const headers = {

@@ -40,11 +40,13 @@ export default function Controls({
     <div className="controls">
       <div className="settings-grid">
         <div className="setting-item">
-          <label className="small-section">Diagram Type</label>
+          <label htmlFor="diagram-type-select" className="small-section">Diagram Type</label>
           <select
+            id="diagram-type-select"
             value={diagramType}
             onChange={(e) => setDiagramType(e.target.value as DiagramType)}
             className="modern-select"
+            aria-label="Choose diagram type"
           >
             <option value="flowchart">📊 Flowchart</option>
             <option value="timeline">⏳ Timeline</option>
@@ -58,11 +60,13 @@ export default function Controls({
 
         {showDirection && (
           <div className="setting-item">
-            <label className="small-section">Direction</label>
+            <label htmlFor="diagram-direction-select" className="small-section">Direction</label>
             <select
+              id="diagram-direction-select"
               value={direction}
               onChange={(e) => setDirection(e.target.value)}
               className="modern-select"
+              aria-label="Choose diagram direction"
             >
               {DIRECTIONS.map(d => (
                 <option key={d.value} value={d.value}>{d.label}</option>
@@ -74,7 +78,7 @@ export default function Controls({
         <div className="setting-item">
           <label className="small-section">Actions</label>
           <div className="button-row">
-            <button onClick={onGenerateFull} className="secondary-btn" disabled={loadingFull}>
+            <button onClick={onGenerateFull} className="secondary-btn" disabled={loadingFull} aria-label="Generate diagram from all editable text">
               {loadingFull ? <span className="spinner"></span> : '🚀 Generate from Full Text'}
             </button>
             <button
@@ -83,6 +87,7 @@ export default function Controls({
               className="primary-btn"
               disabled={loadingSelection || !hasSelectionOrHighlights}
               title={!hasSelectionOrHighlights ? 'Select or highlight text first' : 'Generate diagram for selection'}
+              aria-label="Generate diagram for selected content"
             >
               {loadingSelection ? <span className="spinner"></span> : '🎯 Generate for Selection'}
             </button>

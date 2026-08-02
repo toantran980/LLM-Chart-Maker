@@ -1,12 +1,13 @@
 import './App.css';
 import './mermaid-overrides.css';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import useSelection from './hooks/useSelection';
-import { getApiBase, postDiagram } from './utils/api';
+import { getApiBase, postDiagram, postRefine } from './utils/api';
 import { moveCaretToEnd } from './utils/dom';
 import { Analytics } from '@vercel/analytics/react'
 import EditorArea from './components/EditorArea';
 import Controls from './components/Controls';
+import RefineBar from './components/RefineBar';
 import Result from './components/Result';
 import DiagramHistory from './components/DiagramHistory';
 import PDFViewer from './PDFViewer';
@@ -33,6 +34,7 @@ export default function App() {
   const [fallbackMode, setFallbackMode] = useState<boolean>(false);
   const [loadingFull, setLoadingFull] = useState(false);
   const [loadingSelection, setLoadingSelection] = useState(false);
+  const [loadingRefine, setLoadingRefine] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const editableRef = useRef<HTMLDivElement>(null);
   const selection = useSelection(editableRef);
@@ -68,7 +70,7 @@ export default function App() {
     }
   }
 
-  async function requestDiagram(payload: { text: string; diagramType: DiagramType; direction?: string }, which: 'full' | 'selection') {
+  const requestDiagram = useCallback(async (payload: { text: string; diagramType: DiagramType; direction?: string }, which: 'full' | 'selection') => {
     const trimmedText = payload.text?.trim();
     if (!trimmedText) {
       setMermaid('');
@@ -89,9 +91,9 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  function generateForSelection() {
+  const generateForSelection = useCallback(() => {
     // Check for active browser selection first (the most 'live' action)
     const activeSelection = window.getSelection()?.toString().trim();
 
@@ -115,25 +117,68 @@ export default function App() {
 
     const payload = { text: selectionToUse || highlightedText || text, diagramType, direction };
     requestDiagram(payload, 'selection');
-  }
+  }, [cachedSelection, text, direction, diagramType, requestDiagram]);
 
   function handleColorPick(color: string) {
     applyHighlight(color);
     closePicker();
   }
 
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      const modifier = event.ctrlKey || event.metaKey;
+
+      if (modifier && event.key === 'Enter') {
+        event.preventDefault();
+        const latestText = editableRef.current ? editableRef.current.innerText : text;
+        requestDiagram({ text: latestText, diagramType, direction }, 'full');
+      }
+
+      if (modifier && event.shiftKey && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        generateForSelection();
+      }
+    };
+
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, [text, diagramType, direction, requestDiagram, generateForSelection]);
+
+  async function refineDiagram(instruction: string) {
+    if (!mermaid) return;
+    setLoadingRefine(true);
+    try {
+      const data = await postRefine({ currentDiagram: mermaid, instruction, diagramType });
+      if (data?.mermaid?.trim()) {
+        setMermaid(data.mermaid);
+        saveHistoryEntry({ mermaid: data.mermaid, diagramType });
+        setHistoryRefresh(prev => prev + 1);
+      } else if (data?.error) {
+        alert(`Refine failed: ${data.error}`);
+      }
+    } catch (err) {
+      console.error('Diagram refine error:', err);
+      alert('Failed to refine diagram.');
+    } finally {
+      setLoadingRefine(false);
+    }
+  }
+
   return (
     <div className="app">
-      <button className="mode-toggle-btn" onClick={() => setDarkMode(!darkMode)}>
+      <button className="mode-toggle-btn" onClick={() => setDarkMode(!darkMode)} aria-pressed={darkMode}>
         {darkMode ? '☀️ Light' : '🌙 Dark'}
       </button>
 
-      <header>
-        <h1>Chart Maker</h1>
-        <div className="main-subheading">
+      <header aria-labelledby="app-title">
+        <h1 id="app-title">Chart Maker</h1>
+        <p className="main-subheading">
           Transform your text into beautiful diagrams using AI.
           {fallbackMode && <span style={{ color: '#f59e0b', fontWeight: 'bold' }}> (Local Parser)</span>}
-        </div>
+        </p>
+        <p className="shortcut-note">
+          Keyboard shortcuts: <strong>Ctrl/Cmd+Enter</strong> for full generation, <strong>Ctrl/Cmd+Shift+S</strong> for selection.
+        </p>
       </header>
 
       {uploadedFile && uploadedFile.type === 'application/pdf' ? (
@@ -146,7 +191,7 @@ export default function App() {
           diagramType={diagramType}
         />
       ) : (
-        <section className="section-top">
+        <section className="section-top" aria-label="Diagram input tools">
           <div className="editor-container">
             <label className="small-section">Source Content</label>
             <EditorArea
@@ -179,6 +224,7 @@ export default function App() {
         </section>
       )}
 
+      {mermaid && <RefineBar onRefine={refineDiagram} loading={loadingRefine} />}
       <Result mermaid={mermaid} setMermaid={setMermaid} />
       <DiagramHistory 
         refreshTrigger={historyRefresh} 

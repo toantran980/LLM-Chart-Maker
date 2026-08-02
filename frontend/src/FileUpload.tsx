@@ -46,6 +46,7 @@ export default function FileUpload({ onFileLoaded }: FileUploadProps) {
           type="file"
           accept=".txt,.pdf,.doc,.docx"
           onChange={handleFileChange}
+          aria-label="Upload a text or PDF file"
           style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
         />
       </label>

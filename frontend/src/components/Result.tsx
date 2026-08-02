@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Mermaid from '../Mermaid';
 import CodeEditor from './CodeEditor';
 import { extractMermaidCode } from '../utils/mermaid';
-import { postDescribe } from '../utils/api';
+import { postDescribe, postFix } from '../utils/api';
 
 interface Props { 
   mermaid: string;
@@ -16,6 +16,15 @@ export default function Result({ mermaid, setMermaid }: Props) {
   const [showCode, setShowCode] = useState(false);
   const [description, setDescription] = useState('');
   const [loadingDesc, setLoadingDesc] = useState(false);
+  const [fixing, setFixing] = useState(false);
+  const [fixError, setFixError] = useState<string | null>(null);
+  const [attemptedFix, setAttemptedFix] = useState(false);
+
+  useEffect(() => {
+    setFixError(null);
+    setFixing(false);
+    setAttemptedFix(false);
+  }, [mermaid]);
 
   if (!mermaid) return null;
   const code = extractMermaidCode(mermaid);
@@ -91,6 +100,37 @@ export default function Result({ mermaid, setMermaid }: Props) {
     }
   };
 
+  const handleAutoFix = async (err: Error) => {
+    if (attemptedFix) return;
+    setAttemptedFix(true);
+    setFixing(true);
+    setFixError(null);
+
+    try {
+      const payload = {
+        mermaid: code,
+        error: err.message || 'Unknown Mermaid render error',
+      };
+      const data = await postFix(payload);
+      if (data?.mermaid?.trim()) {
+        setMermaid(data.mermaid);
+      } else {
+        setFixError(data?.error || 'Auto-fix returned no Mermaid code.');
+      }
+    } catch (innerErr) {
+      console.error('Auto-fix failed:', innerErr);
+      setFixError('Auto-fix failed. Please inspect the Mermaid code manually.');
+    } finally {
+      setFixing(false);
+    }
+  };
+
+  const retryAutoFix = () => {
+    setAttemptedFix(false);
+    setFixError(null);
+    handleAutoFix(new Error(fixError || 'Retrying Mermaid auto-fix'));
+  };
+
   return (
     <section className="section-result">
       <div className="result-header">
@@ -132,7 +172,20 @@ export default function Result({ mermaid, setMermaid }: Props) {
         </div>
       </div>
       <div ref={containerRef} style={{ width: '100%' }}>
-        <Mermaid chart={code} theme={theme} />
+        <Mermaid chart={code} theme={theme} onError={handleAutoFix} />
+        {fixing && (
+          <div className="fix-status" style={{ marginTop: '0.75rem', color: 'var(--accent-primary)', fontSize: '0.95rem' }}>
+            🔧 Attempting to auto-fix rendering issues...
+          </div>
+        )}
+        {fixError && (
+          <div className="fix-error" style={{ marginTop: '0.75rem', color: '#b91c1c', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span>⚠️ {fixError}</span>
+            <button type="button" onClick={retryAutoFix} className="secondary-btn-xs" style={{ padding: '0.35rem 0.65rem', borderRadius: '8px' }}>
+              Retry Auto-Fix
+            </button>
+          </div>
+        )}
       </div>
       {showCode && (
         <CodeEditor code={code} onChange={setMermaid} />

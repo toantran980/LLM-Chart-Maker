@@ -1,6 +1,6 @@
-import { generateDiagramWithLLM } from './llm';
+import { generateDiagramWithLLM, refineDiagramWithLLM, fixMermaidWithLLM } from './llm';
 import { fallbackDiagram } from './fallback';
-import type { DiagramRequest } from '../../shared/types';
+import type { DiagramRequest, DiagramType } from '../../shared/types';
 
 export async function generateDiagram(req: DiagramRequest): Promise<string> {
   try {
@@ -18,6 +18,14 @@ export async function generateDiagram(req: DiagramRequest): Promise<string> {
     console.log('[AI] Using fallback diagram due to error.');
     return fallbackDiagram(req);
   }
+}
+
+export async function refineDiagram(req: { currentDiagram: string; instruction: string; diagramType: DiagramType }): Promise<string> {
+  return refineDiagramWithLLM(req);
+}
+
+export async function fixMermaid(req: { mermaid: string; error: string }): Promise<string> {
+  return fixMermaidWithLLM(req);
 }
 
 export { generateDiagramWithLLM } from './llm';

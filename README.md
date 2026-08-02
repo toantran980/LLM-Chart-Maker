@@ -1,98 +1,150 @@
 # LLM Chart Maker
 
-LLM Chart Maker is a production-ready, full-stack monorepo application that transforms natural language text and PDF document contents into beautiful, interactive Mermaid diagrams. It supports selecting text snippets from uploaded documents to construct tailored visual process flows, timelines, rules, and mindmaps.
+LLM Chart Maker is a full-stack TypeScript monorepo that turns text and PDF content into Mermaid diagrams using AI. The app can generate diagrams from selected document text, refine existing diagrams with natural language, and recover from Mermaid syntax errors automatically.
 
-Live Application: https://llm-chart-maker-frontend.vercel.app/
+Live App: https://llm-chart-maker-frontend.vercel.app/
 
-[![Try it on Vercel](<https://img.shields.io/badge/Try%20it-Vercel-000000?style=for-the-badge&logo=vercel>)](https://llm-chart-maker-frontend.vercel.app/)
-
-## Demo (will be back) 
-
-<!-- Replace ./public/demo.png with an actual recording or screenshot. I can generate/export this if you want. -->
-
-![Demo Screenshot](public/demo.png)
+[![Try it on Vercel](https://img.shields.io/badge/Try%20it-Vercel-000000?style=for-the-badge&logo=vercel)](https://llm-chart-maker-frontend.vercel.app/)
 
 ---
 
-## Architecture & Core Structure
+## What it does
 
-The project is structured as a TypeScript monorepo with shared data contracts to ensure type safety across the entire stack:
+- Generate Mermaid diagrams from plain text or PDF content
+- Highlight text in documents and turn selections into diagrams
+- Refine diagrams with natural language instructions
+- Auto-fix Mermaid syntax errors on render failure
+- Export diagrams as SVG or PNG
+- Save diagram history in local storage for quick restoration
+
+---
+
+## Architecture
 
 ```
-├── shared/           # Common interfaces, types, and diagram requests
-├── frontend/         # React SPA built with Vite and Mermaid.js
-└── backend/          # Express.js REST API with LLM generation engines
+├── shared/           # Shared TypeScript interfaces and diagram request types
+├── frontend/         # React + Vite SPA with Mermaid.js and PDF rendering
+└── backend/          # Express API with LLM-powered generation and fix endpoints
 ```
 
-* Frontend: Responsive React layout designed with modern dark/light mode toggles. Incorporates pdfjs-dist to render uploaded PDFs directly in-browser and supports interactive workspace text highlights.
-* Backend: Express service configured with strict production CORS origins, dynamically bound ports, and standard JSON limits.
-* Type-Sharing: Frontend payloads and API responses are governed by the shared folder, ensuring synchronized interfaces without duplicate definitions.
+### Frontend
+
+- React + TypeScript
+- Vite-powered dev server and build pipeline
+- Mermaid.js for diagram rendering
+- PDF.js integration for PDF text extraction and selection
+- Auto theme switcher, code editor, and diagram history
+
+### Backend
+
+- Express REST API
+- OpenAI/LLM integration for diagram generation, refinement, and Mermaid fixes
+- Shared request/response types from `shared/types.ts`
+- Configurable CORS and health checks
 
 ---
 
-## Key Features
+## Key features
 
-- Document Highlight Sync: Render PDFs in-browser, highlight paragraphs or key sections, and aggregate them into a diagram-generation input.
-- Smart AI Directions: Automatically detects the structural flow of content (e.g. LR for processes/pipelines, TD for hierarchies) to render optimal layout alignments.
-- Interactive Formatting: Provides action items to copy Mermaid code definitions directly or export diagrams as high-resolution SVGs or PNGs.
-- Local Fallback Mode: Safe backend error handling that falls back to a deterministic rule-based parser if API limits or credentials are not configured.
-
----
-
-## Tech Stack
-
-* Core & Languages: TypeScript, Node.js, HTML5/CSS3
-* Frontend: React, Vite, Mermaid.js, PDF.js
-* Backend: Express, Axios (for GPT completions)
-* DevOps & Deploys: Render (Backend Web Service), Vercel (Frontend Hosting), Docker Compose
+- AI diagram generation from unstructured text or PDF content
+- Natural language refine mode for in-place diagram edits
+- Mermaid auto-fix on client-side render failures
+- Export rendered diagrams to SVG and PNG
+- History panel with localStorage persistence
+- Accessible dark/light theme support
 
 ---
 
-## Local Development
+## Quick start
 
-### 1. Install Dependencies
-
-Run from the project root to install all workspaces:
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Configure Environment variables
+### 2. Configure environment
 
-Create a .env file in the project root:
+Create a `.env` file in the repository root:
 
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-### 3. Run Dev Services
-
-Start both frontend (Vite) and backend (Express) concurrently:
+### 3. Start the app
 
 ```bash
 npm run dev
 ```
 
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:4173 (Health check: /health)
+Then open:
 
-### Docker Setup
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:4173`
+- Health check: `http://localhost:4173/health`
 
-To spin up the entire application stack in containers:
+---
+
+## Scripts
+
+From the repository root:
+
+```bash
+npm run dev         # start frontend and backend together
+npm run build       # build frontend and backend
+npm run test        # run frontend and backend tests
+```
+
+Frontend and backend scripts are also available independently:
+
+```bash
+npm run backend:dev
+npm run backend:build
+npm run backend:test
+npm run frontend:dev
+npm run frontend:build
+npm run frontend:test
+npm run frontend:lint
+```
+
+---
+
+## Docker
+
+Run the full stack with Docker Compose:
 
 ```bash
 docker compose up --build
 ```
 
-Then visit http://localhost.
+Then visit `http://localhost` in your browser.
 
 ---
 
-## Deployment & CI/CD
+## Deployment notes
 
-This application is configured for Continuous Deployment:
+- Frontend is designed to deploy to Vercel
+- Backend is designed to deploy to a Node.js host such as Render
+- CORS is configured using `ALLOWED_ORIGIN` and the allowed local dev origins
 
-1. Frontend: Hosted on Vercel configured with the frontend root directory and linked to the Render backend via VITE_API_BASE.
-2. Backend: Deployed on Render (Node.js Web Service) referencing the backend root directory.
-3. Security: CORS is restricted dynamically using the ALLOWED_ORIGIN environment variable pointing to the Vercel domain, keeping API credentials safely on the backend server.
+---
+
+## Adding diagram refinement
+
+The app supports an iterative refine flow via the `RefineBar` component. When a diagram exists, users can type instructions such as "add an error step after step 3" and the backend will edit the diagram in place.
+
+---
+
+## Project structure
+
+- `frontend/` — UI, Mermaid rendering, diagram history, refine input
+- `backend/` — API endpoints for `/api/diagram`, `/api/refine`, `/api/fix`, and `/api/describe`
+- `shared/` — shared TypeScript types for both frontend and backend
+
+---
+
+## License
+
+This project is open source under the MIT License.
+
+See the [LICENSE](LICENSE) file for details.
