@@ -1,14 +1,12 @@
 # LLM Chart Maker
 
-![Demo Screenshot](public/demo.png)
-
 LLM Chart Maker is a production-ready, full-stack monorepo application that transforms natural language text and PDF document contents into beautiful, interactive Mermaid diagrams. It supports selecting text snippets from uploaded documents to construct tailored visual process flows, timelines, rules, and mindmaps.
 
 Live Application: https://llm-chart-maker-frontend.vercel.app/
 
 [![Try it on Vercel](<https://img.shields.io/badge/Try%20it-Vercel-000000?style=for-the-badge&logo=vercel>)](https://llm-chart-maker-frontend.vercel.app/)
 
-## Demo (will be back)
+## Demo (will be back) 
 
 <!-- Replace ./public/demo.png with an actual recording or screenshot. I can generate/export this if you want. -->
 
