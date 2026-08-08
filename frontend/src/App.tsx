@@ -2,9 +2,8 @@ import './App.css';
 import './mermaid-overrides.css';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import useSelection from './hooks/useSelection';
-import { getApiBase, postDiagram, postRefine } from './utils/api';
+import { postDiagram, postRefine } from './utils/api';
 import { moveCaretToEnd } from './utils/dom';
-import { Analytics } from '@vercel/analytics/react'
 import EditorArea from './components/EditorArea';
 import Controls from './components/Controls';
 import RefineBar from './components/RefineBar';
@@ -12,12 +11,9 @@ import Result from './components/Result';
 import DiagramHistory from './components/DiagramHistory';
 import PDFViewer from './PDFViewer';
 import { saveHistoryEntry, type HistoryEntry } from './utils/history';
+import { useBackendHealth } from './hooks/useBackendHealth';
 
 import type { DiagramType } from '@shared/types';
-
-interface HealthResponse {
-  fallback?: boolean;
-}
 
 /**
  * Main application component definition
@@ -31,7 +27,7 @@ export default function App() {
   const [direction, setDirection] = useState<string>('auto');
   const [mermaid, setMermaid] = useState<string>('');
   const [historyRefresh, setHistoryRefresh] = useState(0);
-  const [fallbackMode, setFallbackMode] = useState<boolean>(false);
+  const fallbackMode = useBackendHealth();
   const [loadingFull, setLoadingFull] = useState(false);
   const [loadingSelection, setLoadingSelection] = useState(false);
   const [loadingRefine, setLoadingRefine] = useState(false);
@@ -49,14 +45,6 @@ export default function App() {
       }
     }
   }, [text]);
-
-  // Check backend health
-  useEffect(() => {
-    const base = getApiBase();
-    fetch(`${base.replace(/\/$/, '')}/health`).then(r => r.json()).then((j: HealthResponse) => {
-      if (j?.fallback) setFallbackMode(true);
-    }).catch(() => { });
-  }, []);
 
   // Dark mode side effects
   useEffect(() => {
@@ -185,8 +173,6 @@ export default function App() {
         <PDFViewer
           file={uploadedFile}
           onClose={() => setUploadedFile(null)}
-          highlights={[]}
-          cachedSelection={cachedSelection}
           requestDiagram={requestDiagram}
           diagramType={diagramType}
         />
@@ -233,7 +219,6 @@ export default function App() {
           setDiagramType(entry.diagramType);
         }} 
       />
-      <Analytics />
     </div>
   );
 }

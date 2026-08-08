@@ -6,43 +6,29 @@ export function getApiBase(): string {
 
 export type DiagramPayload = { text: string; diagramType: DiagramType; direction?: string; instruction?: string };
 
+async function postJson(path: string, body: unknown) {
+  const base = getApiBase();
+  const res = await fetch(`${base}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
 // Post a diagram generation request to the backend API
-export async function postDiagram(payload: DiagramPayload) {
-  const base = getApiBase();
-  const res = await fetch(`${base}/api/diagram`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  return res.json();
+export function postDiagram(payload: DiagramPayload) {
+  return postJson('/api/diagram', payload);
 }
 
-export async function postRefine(payload: { currentDiagram: string; instruction: string; diagramType: DiagramType }) {
-  const base = getApiBase();
-  const res = await fetch(`${base}/api/refine`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  return res.json();
+export function postRefine(payload: { currentDiagram: string; instruction: string; diagramType: DiagramType }) {
+  return postJson('/api/refine', payload);
 }
 
-export async function postFix(payload: { mermaid: string; error: string }) {
-  const base = getApiBase();
-  const res = await fetch(`${base}/api/fix`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  return res.json();
+export function postFix(payload: { mermaid: string; error: string }) {
+  return postJson('/api/fix', payload);
 }
 
-export async function postDescribe(mermaid: string) {
-  const base = getApiBase();
-  const res = await fetch(`${base}/api/describe`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mermaid }),
-  });
-  return res.json();
+export function postDescribe(mermaid: string) {
+  return postJson('/api/describe', { mermaid });
 }

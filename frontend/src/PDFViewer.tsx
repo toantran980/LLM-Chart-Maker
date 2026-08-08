@@ -29,8 +29,6 @@ interface TextLayerCtor {
 interface PDFViewerProps {
   file: File | null;
   onClose: () => void;
-  highlights: Highlight[];
-  cachedSelection: string;
   requestDiagram: (payload: { text: string; diagramType: DiagramType }, which: 'full' | 'selection') => void;
   diagramType: DiagramType;
 }
@@ -42,11 +40,10 @@ function isTextItem(item: TextItem): item is TextItem & { str: string } {
 export default function PDFViewer({
   file,
   onClose,
-  highlights: initialHighlights,
   requestDiagram,
   diagramType
 }: PDFViewerProps) {
-  const [highlights, setHighlights] = useState<Highlight[]>(initialHighlights || []);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [loading, setLoading] = useState(false);
   const [manualHighlights, setManualHighlights] = useState<Highlight[]>([]);
   const [numPages, setNumPages] = useState<number>(0);
@@ -54,6 +51,7 @@ export default function PDFViewer({
   const [isPdfTruncated, setIsPdfTruncated] = useState(false);
   const canvasRefs = useRef<Array<HTMLCanvasElement | null>>([]);
   const textLayerRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const viewerRef = useRef<HTMLDivElement>(null);
 
   // Listen for global selection events to auto-sync
   useEffect(() => {
@@ -71,12 +69,19 @@ export default function PDFViewer({
   // Load and Render PDF using pdf.js
   useEffect(() => {
     if (!file) return;
+    let cancelled = false;
+    let observer: IntersectionObserver | undefined;
+    let observeTimeout: ReturnType<typeof setTimeout> | undefined;
     const reader = new FileReader();
     reader.onload = async () => {
       try {
         const data = new Uint8Array(reader.result as ArrayBuffer);
         const loadingTask = pdfjsLib.getDocument({ data });
         const pdf = await loadingTask.promise;
+        if (cancelled) {
+          await pdf.destroy();
+          return;
+        }
         setNumPages(pdf.numPages);
 
         setLoading(true);
@@ -115,9 +120,9 @@ export default function PDFViewer({
         setLoading(false);
 
         // Render pages using IntersectionObserver for performance
-        const observer = new IntersectionObserver((entries) => {
+        observer = new IntersectionObserver((entries) => {
           entries.forEach(async (entry) => {
-            if (entry.isIntersecting) {
+            if (!cancelled && entry.isIntersecting) {
               const pageNum = parseInt(entry.target.getAttribute('data-page') || '0');
               if (pageNum > 0) {
                 const page = await pdf.getPage(pageNum);
@@ -159,21 +164,29 @@ export default function PDFViewer({
         }, { threshold: 0.1 });
 
         // Observe all page containers
-        setTimeout(() => {
-          document.querySelectorAll('.pdf-page-container').forEach(el => observer.observe(el));
+        observeTimeout = setTimeout(() => {
+          viewerRef.current?.querySelectorAll('.pdf-page-container').forEach(el => observer?.observe(el));
         }, 500);
       } catch (err) {
-        setLoading(false);
-        console.error('PDF Rendering Error:', err);
+        if (!cancelled) {
+          setLoading(false);
+          console.error('PDF Rendering Error:', err);
+        }
       }
     };
     reader.readAsArrayBuffer(file);
+    return () => {
+      cancelled = true;
+      reader.abort();
+      if (observeTimeout) clearTimeout(observeTimeout);
+      observer?.disconnect();
+    };
   }, [file]);
 
   if (!file) return null;
 
   return (
-    <div className="pdf-viewer-root studio-theme">
+    <div ref={viewerRef} className="pdf-viewer-root studio-theme">
       <button className="close-pdf-btn" onClick={onClose}>
         &times; Close PDF and return to Editor
       </button>

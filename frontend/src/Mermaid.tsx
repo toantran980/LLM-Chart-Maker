@@ -58,34 +58,6 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: st
     const { svg } = await mermaid.render(uid, def);
     containerEl.innerHTML = svg;
 
-    // Inject custom premium styles
-    const style = document.createElement('style');
-    style.innerHTML = `
-      .mermaid svg { background: transparent !important; max-width: none !important; width: 100% !important; height: auto !important; }
-      .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon, .mermaid .node path {
-        fill: #6366f1 !important;
-        stroke: #4338ca !important;
-        stroke-width: 2px !important;
-        filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
-      }
-      .mermaid .edgePath .path {
-        stroke: #818cf8 !important;
-        stroke-width: 2.5px !important;
-        opacity: 0.8;
-      }
-      .mermaid .arrowheadPath { fill: #818cf8 !important; stroke: none !important; }
-      .mermaid .edgeLabel {
-        background-color: rgba(255, 255, 255, 0.9) !important;
-        backdrop-filter: blur(4px);
-        border-radius: 4px;
-        padding: 2px 6px !important;
-        color: #4338ca !important;
-        font-weight: 700 !important;
-        font-size: 13px !important;
-      }
-      .mermaid .node .label { color: white !important; font-weight: 600 !important; }
-    `;
-    containerEl.appendChild(style);
   } catch (err) {
     console.error('[Mermaid] Render failed for definition:', def);
     console.error('[Mermaid] Error details:', err);
@@ -146,84 +118,6 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
     });
   }, [chart, theme, onError]);
 
-  const downloadSVG = () => {
-    if (!ref.current) return;
-    const svg = ref.current.querySelector('svg');
-    if (!svg) return;
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `diagram-${Date.now()}.svg`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const downloadPNG = () => {
-    if (!ref.current) return;
-    const svg = ref.current.querySelector('svg');
-    if (!svg) return;
-
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-
-    // Use scale for a reasonable file size
-    const SCALE = 1.5;
-    const svgEl = svg as SVGSVGElement;
-    const svgWidth = svgEl.viewBox?.baseVal?.width || svgEl.width?.baseVal?.value || 800;
-    const svgHeight = svgEl.viewBox?.baseVal?.height || svgEl.height?.baseVal?.value || 600;
-    canvas.width = svgWidth * SCALE;
-    canvas.height = svgHeight * SCALE;
-
-    img.onload = () => {
-      if (ctx) {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.scale(SCALE, SCALE);
-        ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
-        // use toBlob for smaller file sizes
-        canvas.toBlob((blob) => {
-          if (!blob) return;
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `diagram-${Date.now()}.png`;
-          link.click();
-          URL.revokeObjectURL(url);
-        }, 'image/png');
-      }
-    };
-    // encode SVG string to base64 
-    const encoder = new TextEncoder();
-    const bytes = encoder.encode(svgData);
-    const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
-    img.src = 'data:image/svg+xml;base64,' + btoa(binary);
-  };
-
-  const copyCode = () => {
-    navigator.clipboard.writeText(chart).then(() => {
-      alert("Mermaid code copied to clipboard!");
-    });
-  };
-
-  const copyEmbed = () => {
-    if (!ref.current) return;
-    const svg = ref.current.querySelector('svg');
-    if (!svg) return;
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const encoder = new TextEncoder();
-    const bytes = encoder.encode(svgData);
-    const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
-    const base64 = btoa(binary);
-    const embedCode = `<img src="data:image/svg+xml;base64,${base64}" alt="Diagram" />`;
-    navigator.clipboard.writeText(embedCode).then(() => {
-      alert("Embed code copied to clipboard!");
-    });
-  };
-
   // Zoom / Pan state
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -268,10 +162,6 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
         gap: '0.5rem',
         zIndex: 10
       }}>
-        <button onClick={copyCode} className="secondary-btn-xs" title="Copy Code">📋</button>
-        <button onClick={copyEmbed} className="secondary-btn-xs" title="Copy Embed HTML">{'</>'}</button>
-        <button onClick={downloadSVG} className="secondary-btn-xs" title="Download SVG">SVG</button>
-        <button onClick={downloadPNG} className="primary-btn-sm" style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem' }} title="Download PNG">Download PNG</button>
         {/* Zoom controls */}
         <button onClick={zoomOut} className="secondary-btn-xs" title="Zoom out" style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1, padding: '0.25rem 0.55rem' }}>−</button>
         <button

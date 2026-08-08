@@ -29,18 +29,31 @@ export default function Result({ mermaid, setMermaid }: Props) {
   if (!mermaid) return null;
   const code = extractMermaidCode(mermaid);
 
+  const getRenderedSvg = () => containerRef.current?.querySelector('svg') ?? null;
+
+  const serializeRenderedSvg = () => {
+    const svg = getRenderedSvg();
+    return svg ? new XMLSerializer().serializeToString(svg) : null;
+  };
+
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownloadSVG = () => {
-    if (!containerRef.current) return;
-    const svg = containerRef.current.querySelector('svg');
-    if (!svg) return;
+  const handleCopyEmbed = () => {
+    const svgData = serializeRenderedSvg();
+    if (!svgData) return;
+    const bytes = new TextEncoder().encode(svgData);
+    const binary = Array.from(bytes).map((byte) => String.fromCharCode(byte)).join('');
+    const embedCode = `<img src="data:image/svg+xml;base64,${btoa(binary)}" alt="Diagram" />`;
+    navigator.clipboard.writeText(embedCode);
+  };
 
-    const svgData = new XMLSerializer().serializeToString(svg);
+  const handleDownloadSVG = () => {
+    const svgData = serializeRenderedSvg();
+    if (!svgData) return;
     const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
     const svgUrl = URL.createObjectURL(svgBlob);
     const downloadLink = document.createElement('a');
@@ -52,11 +65,11 @@ export default function Result({ mermaid, setMermaid }: Props) {
   };
 
   const handleDownloadPNG = () => {
-    if (!containerRef.current) return;
-    const svg = containerRef.current.querySelector('svg');
+    const svg = getRenderedSvg();
     if (!svg) return;
 
-    const svgData = new XMLSerializer().serializeToString(svg);
+    const svgData = serializeRenderedSvg();
+    if (!svgData) return;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
@@ -162,6 +175,9 @@ export default function Result({ mermaid, setMermaid }: Props) {
           </button>
           <button className="action-btn" onClick={handleCopy}>
             {copied ? '✅ Copied' : '📋 Copy Code'}
+          </button>
+          <button className="action-btn" onClick={handleCopyEmbed}>
+            {'</>'} Embed
           </button>
           <button className="action-btn" onClick={handleDownloadSVG}>
             💾 SVG

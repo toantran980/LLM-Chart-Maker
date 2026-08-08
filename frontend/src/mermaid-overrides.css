@@ -2,6 +2,9 @@
 .mermaid svg {
   background: transparent !important;
   font-family: var(--font-main) !important;
+  max-width: none !important;
+  width: 100% !important;
+  height: auto !important;
 }
 
 /* Make nodes look like premium cards */

@@ -22,10 +22,27 @@ Live App: https://llm-chart-maker-frontend.vercel.app/
 ## Architecture
 
 ```
-├── shared/           # Shared TypeScript interfaces and diagram request types
-├── frontend/         # React + Vite SPA with Mermaid.js and PDF rendering
-└── backend/          # Express API with LLM-powered generation and fix endpoints
+repository root (npm workspace)
+├── package.json       # Root scripts: dev, build, test, and workspace tasks
+├── package-lock.json  # Single dependency lockfile for both workspaces
+├── shared/            # Shared TypeScript interfaces and diagram request types
+├── frontend/          # React + Vite SPA with Mermaid.js and PDF rendering
+└── backend/           # Express API with LLM-powered generation and fix endpoints
 ```
+
+```text
+Browser
+  └─ frontend (React/Vite, :5173)
+       ├─ renders Mermaid diagrams and PDF content
+       └─ calls backend API
+            └─ backend (Express, :4173)
+                 └─ calls the configured LLM provider
+
+frontend and backend both import shared types from shared/types.ts.
+```
+
+The root workspace owns installation and orchestration. Run `npm install` and
+the root scripts from here; `npm run dev` starts both services in parallel.
 
 ### Frontend
 
@@ -63,6 +80,10 @@ Live App: https://llm-chart-maker-frontend.vercel.app/
 npm install
 ```
 
+Run this command from the repository root. This project uses npm workspaces, so
+the root `package-lock.json` manages both `frontend` and `backend`; there is no
+need to run `npm install` inside those directories separately.
+
 ### 2. Configure environment
 
 Create a `.env` file in the repository root:
@@ -93,9 +114,15 @@ From the repository root:
 npm run dev         # start frontend and backend together
 npm run build       # build frontend and backend
 npm run test        # run frontend and backend tests
+npm run frontend:lint # lint the frontend
 ```
 
-Frontend and backend scripts are also available independently:
+`npm run dev` is the normal local-development command. It starts the frontend
+and backend together, so you do not need separate terminals or `cd frontend` /
+`cd backend` before starting the app.
+
+Use the workspace-specific root scripts only when you intentionally want to run
+one service or task by itself:
 
 ```bash
 npm run backend:dev

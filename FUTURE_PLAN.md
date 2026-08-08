@@ -180,6 +180,21 @@ The visual app should feel polished and usable on smaller screens and for keyboa
 
 ---
 
+### 14. PDF and Text-Selection Maintenance Refactor
+
+**Effort:** ~4–6 hrs | **Value:** ⭐⭐⭐ (maintainability)
+
+`PDFViewer.tsx` and `useSelection.ts` are functional but contain the most
+browser-specific, imperative logic in the frontend. This is maintenance work,
+not a prerequisite for new features.
+
+- [ ] Extract PDF loading, text extraction, and page rendering from `PDFViewer.tsx` into focused hooks/utilities
+- [ ] Extract contentEditable range, highlight wrapping, and caret-restoration helpers from `useSelection.ts`
+- [ ] Add component-level tests for PDF lifecycle cleanup and text-highlight edge cases
+- [ ] Keep behavior unchanged; undertake this when adding PDF/highlight features or fixing a related bug
+
+---
+
 ## 🔴 Hard / Deferred — Set Aside for Now
 
 > Requires new infrastructure or significant architecture changes. Not worth it yet.
@@ -248,6 +263,7 @@ Week 3+  (~8 hrs)
 | Prompt examples        | Medium | ⭐⭐⭐⭐   | Later    |
 | Accessibility polish   | Medium | ⭐⭐⭐⭐   | Later    |
 | Better README          | Medium | ⭐⭐⭐⭐   | Later    |
+| PDF/selection refactor | Medium | ⭐⭐⭐     | Later    |
 | Shareable URLs         | Hard   | ⭐⭐⭐     | Deferred |
 | User auth              | Hard   | ⭐⭐⭐     | Deferred |
 | RAG / Chat PDF         | Hard   | ⭐⭐       | Deferred |
