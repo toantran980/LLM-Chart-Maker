@@ -209,9 +209,9 @@ not a prerequisite for new features.
 
 **Effort:** ~3 hrs | **Value:** ⭐⭐⭐⭐⭐
 
-- [ ] Validate request bodies and enforce text/instruction length limits
-- [ ] Add per-IP rate limits to LLM routes
-- [ ] Add request timeouts and structured server error responses
+- [X] Validate request bodies and enforce text/instruction length limits
+- [X] Add per-IP rate limits to LLM routes
+- [X] Add request timeouts and structured server error responses
 
 ### 17. Safe Mermaid Rendering Audit
 

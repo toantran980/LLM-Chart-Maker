@@ -1,8 +1,11 @@
 import axios from 'axios';
 import type { DiagramRequest, DiagramType } from '../../shared/types';
+import { ApiError } from './errors';
+import { DEFAULT_LLM_TIMEOUT_MS } from './limits';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
+const LLM_TIMEOUT_MS = Number.parseInt(process.env.LLM_TIMEOUT_MS || '', 10) || DEFAULT_LLM_TIMEOUT_MS;
 
 // Sentinel value meaning "let the LLM decide"
 const AUTO = 'auto';
@@ -12,20 +15,41 @@ interface OpenAIResponse { choices?: { message?: { content?: string } }[]; }
 
 async function requestLLM(messages: LLMMessage[], maxCompletionTokens = 1000): Promise<string> {
   if (!OPENAI_API_KEY) {
-    throw new Error('OpenAI API key is missing. Please set OPENAI_API_KEY in your .env file.');
+    throw new ApiError(
+      'OpenAI API key is missing. Please set OPENAI_API_KEY in your .env file.',
+      503,
+      'LLM_ERROR',
+    );
   }
 
-  const response = await axios.post<OpenAIResponse>(OPENAI_API_URL, {
-    model: 'gpt-5.4-mini',
-    messages,
-    temperature: 0.1,
-    max_completion_tokens: maxCompletionTokens,
-  }, {
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
-  });
-  const content = response.data?.choices?.[0]?.message?.content;
-  if (!content) throw new Error('Empty response from LLM');
-  return content.trim();
+  try {
+    const response = await axios.post<OpenAIResponse>(OPENAI_API_URL, {
+      model: 'gpt-5.4-mini',
+      messages,
+      temperature: 0.1,
+      max_completion_tokens: maxCompletionTokens,
+    }, {
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
+      timeout: LLM_TIMEOUT_MS,
+    });
+    const content = response.data?.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new ApiError('Empty response from LLM', 502, 'LLM_ERROR');
+    }
+    return content.trim();
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    if (axios.isAxiosError(err)) {
+      if (err.code === 'ECONNABORTED') {
+        throw new ApiError('LLM request timed out', 504, 'LLM_TIMEOUT');
+      }
+      const providerMessage = err.response?.data?.error?.message;
+      const message = typeof providerMessage === 'string' ? providerMessage : err.message;
+      const status = err.response?.status && err.response.status >= 400 ? err.response.status : 502;
+      throw new ApiError(message, status, 'LLM_ERROR');
+    }
+    throw err;
+  }
 }
 
 function buildPrompt(req: DiagramRequest & { direction?: string }) {
