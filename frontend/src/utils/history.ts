@@ -23,7 +23,7 @@ export function loadHistory(): HistoryEntry[] {
 export function saveHistoryEntry(entry: Omit<HistoryEntry, 'id' | 'timestamp'>): HistoryEntry[] {
   const current = loadHistory();
   const newEntry: HistoryEntry = {
-    ...entry,
+    ...entry, // (spread operator) created new object to avoid modified properties of the original entry
     id: Math.random().toString(36).substring(2, 9),
     timestamp: Date.now(),
   };
