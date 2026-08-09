@@ -13,7 +13,14 @@ async function postJson(path: string, body: unknown) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  return res.json();
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const message = typeof data.error === 'string' ? data.error : `Request failed (${res.status})`;
+    throw new Error(message);
+  }
+
+  return data;
 }
 
 // Post a diagram generation request to the backend API

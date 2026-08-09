@@ -26,6 +26,7 @@ describe('postDiagram', () => {
   it('posts payload to the diagram endpoint', async () => {
     vi.stubEnv('VITE_API_BASE', 'https://api.example.com');
     const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
       json: async () => ({ mermaid: '```mermaid\nflowchart TD\n```' }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -51,6 +52,7 @@ describe('postRefine', () => {
   it('posts payload to the refine endpoint', async () => {
     vi.stubEnv('VITE_API_BASE', 'https://api.example.com');
     const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
       json: async () => ({ mermaid: '```mermaid\nflowchart TD\nA --> B\n```' }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -76,6 +78,7 @@ describe('postFix', () => {
   it('posts payload to the fix endpoint', async () => {
     vi.stubEnv('VITE_API_BASE', 'https://api.example.com');
     const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
       json: async () => ({ mermaid: '```mermaid\nflowchart TD\nA --> B\n```' }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -89,5 +92,15 @@ describe('postFix', () => {
       body: JSON.stringify(payload),
     });
     expect(result.mermaid).toContain('flowchart TD');
+  });
+
+  it('throws the API error for a failed response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      json: async () => ({ error: 'Too many requests' }),
+    }));
+
+    await expect(postDiagram({ text: 'A', diagramType: 'flowchart' })).rejects.toThrow('Too many requests');
   });
 });

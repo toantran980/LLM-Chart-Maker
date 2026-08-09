@@ -195,6 +195,48 @@ not a prerequisite for new features.
 
 ---
 
+## 🟠 Production Readiness — Add Before Growth
+
+### 15. API Errors and Retry Feedback
+
+**Effort:** ~1 hr | **Value:** ⭐⭐⭐⭐⭐
+
+- [X] Treat non-2xx API responses as errors in the frontend client
+- [X] Show inline generation/refinement failures instead of silently logging them
+- [X] Offer a retry action for failed generation requests
+
+### 16. API Abuse and Cost Controls
+
+**Effort:** ~3 hrs | **Value:** ⭐⭐⭐⭐⭐
+
+- [ ] Validate request bodies and enforce text/instruction length limits
+- [ ] Add per-IP rate limits to LLM routes
+- [ ] Add request timeouts and structured server error responses
+
+### 17. Safe Mermaid Rendering Audit
+
+**Effort:** ~2 hrs | **Value:** ⭐⭐⭐⭐⭐
+
+- [ ] Explicitly configure Mermaid's strict security mode
+- [ ] Remove unescaped error-message interpolation into `innerHTML`
+- [ ] Test hostile labels and malformed Mermaid input
+
+### 18. Reproducible Diagram History
+
+**Effort:** ~2 hrs | **Value:** ⭐⭐⭐⭐
+
+- [ ] Store source text, direction, theme, and refinement instruction with each history entry
+- [ ] Add a user-editable title and search/filter controls
+
+### 19. Diagram Type Suggestions
+
+**Effort:** ~3 hrs | **Value:** ⭐⭐⭐⭐
+
+- [ ] Recommend a diagram type from the source text before generation
+- [ ] Let users accept or override the recommendation
+
+---
+
 ## 🔴 Hard / Deferred — Set Aside for Now
 
 > Requires new infrastructure or significant architecture changes. Not worth it yet.

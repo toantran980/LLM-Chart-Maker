@@ -31,6 +31,8 @@ export default function App() {
   const [loadingFull, setLoadingFull] = useState(false);
   const [loadingSelection, setLoadingSelection] = useState(false);
   const [loadingRefine, setLoadingRefine] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [failedDiagramRequest, setFailedDiagramRequest] = useState<{ payload: { text: string; diagramType: DiagramType; direction?: string }; which: 'full' | 'selection' } | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const editableRef = useRef<HTMLDivElement>(null);
   const selection = useSelection(editableRef);
@@ -67,6 +69,8 @@ export default function App() {
     }
     const setLoading = which === 'full' ? setLoadingFull : setLoadingSelection;
     setLoading(true);
+    setRequestError(null);
+    setFailedDiagramRequest(null);
     try {
       const data = await postDiagram({ ...payload, text: trimmedText });
       if (data?.mermaid?.trim()) {
@@ -76,6 +80,8 @@ export default function App() {
       }
     } catch (err) {
       console.error('Diagram generation error:', err);
+      setRequestError(err instanceof Error ? err.message : 'Unable to generate the diagram. Please try again.');
+      setFailedDiagramRequest({ payload: { ...payload, text: trimmedText }, which });
     } finally {
       setLoading(false);
     }
@@ -115,6 +121,10 @@ export default function App() {
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
       const modifier = event.ctrlKey || event.metaKey;
+      const target = event.target as HTMLElement | null;
+      const isTyping = target?.matches('input, textarea, select, [contenteditable="true"]');
+
+      if (isTyping) return;
 
       if (modifier && event.key === 'Enter') {
         event.preventDefault();
@@ -135,18 +145,17 @@ export default function App() {
   async function refineDiagram(instruction: string) {
     if (!mermaid) return;
     setLoadingRefine(true);
+    setRequestError(null);
     try {
       const data = await postRefine({ currentDiagram: mermaid, instruction, diagramType });
       if (data?.mermaid?.trim()) {
         setMermaid(data.mermaid);
         saveHistoryEntry({ mermaid: data.mermaid, diagramType });
         setHistoryRefresh(prev => prev + 1);
-      } else if (data?.error) {
-        alert(`Refine failed: ${data.error}`);
       }
     } catch (err) {
       console.error('Diagram refine error:', err);
-      alert('Failed to refine diagram.');
+      setRequestError(err instanceof Error ? err.message : 'Unable to refine the diagram. Please try again.');
     } finally {
       setLoadingRefine(false);
     }
@@ -211,6 +220,21 @@ export default function App() {
       )}
 
       {mermaid && <RefineBar onRefine={refineDiagram} loading={loadingRefine} />}
+      {requestError && (
+        <div className="request-error" role="alert">
+          <span>Unable to complete that request: {requestError}</span>
+          {failedDiagramRequest && (
+            <button
+              type="button"
+              className="secondary-btn-xs"
+              onClick={() => requestDiagram(failedDiagramRequest.payload, failedDiagramRequest.which)}
+            >
+              Retry
+            </button>
+          )}
+          <button type="button" className="request-error-dismiss" onClick={() => setRequestError(null)} aria-label="Dismiss error">×</button>
+        </div>
+      )}
       <Result mermaid={mermaid} setMermaid={setMermaid} />
       <DiagramHistory 
         refreshTrigger={historyRefresh} 
