@@ -39,14 +39,21 @@ async function requestLLM(messages: LLMMessage[], maxCompletionTokens = 1000): P
     return content.trim();
   } catch (err) {
     if (err instanceof ApiError) throw err;
-    if (axios.isAxiosError(err)) {
-      const axiosError = err;
-      if (axiosError.code === 'ECONNABORTED') {
+    
+    // Check for axios error structure without relying on axios.isAxiosError
+    const error = err as any;
+    const isAxiosError = error && 
+      (error.config !== undefined || 
+       error.response !== undefined || 
+       error.request !== undefined);
+    
+    if (isAxiosError) {
+      if (error.code === 'ECONNABORTED') {
         throw new ApiError('LLM request timed out', 504, 'LLM_TIMEOUT');
       }
-      const providerMessage = axiosError.response?.data?.error?.message;
-      const message = typeof providerMessage === 'string' ? providerMessage : axiosError.message;
-      const status = axiosError.response?.status && axiosError.response.status >= 400 ? axiosError.response.status : 502;
+      const providerMessage = error.response?.data?.error?.message;
+      const message = typeof providerMessage === 'string' ? providerMessage : (error.message || 'Unknown axios error');
+      const status = error.response?.status && error.response.status >= 400 ? error.response.status : 502;
       throw new ApiError(message, status, 'LLM_ERROR');
     }
     throw err;
