@@ -25,9 +25,15 @@ Live App: https://llm-chart-maker-frontend.vercel.app/
 repository root (npm workspace)
 ├── package.json       # Root scripts: dev, build, test, and workspace tasks
 ├── package-lock.json  # Single dependency lockfile for both workspaces
+├── .gitignore         # Consolidated ignore patterns for entire workspace
+├── .dockerignore      # Consolidated Docker ignore patterns (build context: root)
+├── docker-compose.yml # Docker orchestration for full stack
 ├── shared/            # Shared TypeScript interfaces and diagram request types
 ├── frontend/          # React + Vite SPA with Mermaid.js and PDF rendering
+│   ├── Dockerfile     # Frontend Docker build configuration
+│   └── nginx.conf     # Nginx configuration for serving static files
 └── backend/           # Express API with LLM-powered generation and fix endpoints
+    └── Dockerfile     # Backend Docker build configuration
 ```
 
 ```text
@@ -43,6 +49,12 @@ frontend and backend both import shared types from shared/types.ts.
 
 The root workspace owns installation and orchestration. Run `npm install` and
 the root scripts from here; `npm run dev` starts both services in parallel.
+
+**Workspace structure:**
+- Dependencies are hoisted to root `node_modules/` (npm workspace pattern)
+- `frontend/node_modules/` contains only frontend-specific packages (e.g., `@vercel/*`)
+- `backend/` has no local `node_modules/` (all dependencies are in root)
+- This reduces disk space and prevents dependency conflicts
 
 ### Frontend
 
@@ -83,6 +95,10 @@ npm install
 Run this command from the repository root. This project uses npm workspaces, so
 the root `package-lock.json` manages both `frontend` and `backend`; there is no
 need to run `npm install` inside those directories separately.
+
+**Note:** The workspace structure automatically hoists dependencies to the root
+`node_modules/` directory. Only frontend-specific packages (like `@vercel/*`)
+are kept in `frontend/node_modules/`.
 
 ### 2. Configure environment
 
@@ -146,12 +162,20 @@ docker compose up --build
 
 Then visit `http://localhost` in your browser.
 
+**Docker setup:**
+- Build context is set to repository root (`.`)
+- `.dockerignore` is at root level to match the build context
+- Dockerfiles remain in `frontend/` and `backend/` subdirectories
+- This structure ensures proper exclusion of `node_modules`, `dist/`, and other build artifacts
+
 ---
 
 ## Deployment notes
 
-- Frontend is designed to deploy to Vercel
-- Backend is designed to deploy to a Node.js host such as Render
+- **Frontend (Vercel)**: Auto-builds from source using CI workflow
+- **Backend (Render)**: Auto-builds from source using build command
+- Both platforms ignore committed `node_modules` and `dist/` directories
+- Build artifacts are generated during deployment, not committed to git
 - CORS is configured using `ALLOWED_ORIGIN` and the allowed local dev origins
 
 ---
@@ -167,6 +191,9 @@ The app supports an iterative refine flow via the `RefineBar` component. When a 
 - `frontend/` — UI, Mermaid rendering, diagram history, refine input
 - `backend/` — API endpoints for `/api/diagram`, `/api/refine`, `/api/fix`, and `/api/describe`
 - `shared/` — shared TypeScript types for both frontend and backend
+- `.gitignore` — Consolidated ignore patterns for entire workspace (root only)
+- `.dockerignore` — Consolidated Docker ignore patterns at root level
+- `docker-compose.yml` — Docker orchestration for full stack deployment
 
 ---
 
