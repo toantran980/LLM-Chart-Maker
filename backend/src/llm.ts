@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { isAxiosError } from 'axios';
 import type { DiagramRequest, DiagramType } from '../../shared/types';
 import { ApiError } from './errors';
 import { DEFAULT_LLM_TIMEOUT_MS } from './limits';
@@ -57,7 +58,7 @@ async function requestLLM(messages: LLMMessage[], maxCompletionTokens = 1000): P
     //   throw new ApiError(message, status, 'LLM_ERROR');
     // }
 
-    if (axios.isAxiosError(err)) {
+    if (isAxiosError(err)) {
       if (err.code === 'ECONNABORTED') {
         throw new ApiError('LLM request timed out', 504, 'LLM_TIMEOUT');
       }
