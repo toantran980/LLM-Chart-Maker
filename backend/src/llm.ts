@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { isAxiosError } from 'axios';
 import type { DiagramRequest, DiagramType } from '../../shared/types';
 import { ApiError } from './errors';
 import { DEFAULT_LLM_TIMEOUT_MS } from './limits';
@@ -42,29 +41,19 @@ async function requestLLM(messages: LLMMessage[], maxCompletionTokens = 1000): P
     if (err instanceof ApiError) throw err;
     
     // Check for axios error structure without relying on axios.isAxiosError
-    // const error = err as any;
-    // const isAxiosError = error && 
-    //   (error.config !== undefined || 
-    //    error.response !== undefined || 
-    //    error.request !== undefined);
+    const error = err as any;
+    const isAxiosError = error && 
+      (error.config !== undefined || 
+       error.response !== undefined || 
+       error.request !== undefined);
     
-    // if (isAxiosError) {
-    //   if (error.code === 'ECONNABORTED') {
-    //     throw new ApiError('LLM request timed out', 504, 'LLM_TIMEOUT');
-    //   }
-    //   const providerMessage = error.response?.data?.error?.message;
-    //   const message = typeof providerMessage === 'string' ? providerMessage : (error.message || 'Unknown axios error');
-    //   const status = error.response?.status && error.response.status >= 400 ? error.response.status : 502;
-    //   throw new ApiError(message, status, 'LLM_ERROR');
-    // }
-
-    if (isAxiosError(err)) {
-      if (err.code === 'ECONNABORTED') {
+    if (isAxiosError) {
+      if (error.code === 'ECONNABORTED') {
         throw new ApiError('LLM request timed out', 504, 'LLM_TIMEOUT');
       }
-      const providerMessage = err.response?.data?.error?.message;
-      const message = typeof providerMessage === 'string' ? providerMessage : err.message;
-      const status = err.response?.status && err.response.status >= 400 ? err.response.status : 502;
+      const providerMessage = error.response?.data?.error?.message;
+      const message = typeof providerMessage === 'string' ? providerMessage : (error.message || 'Unknown axios error');
+      const status = error.response?.status && error.response.status >= 400 ? error.response.status : 502;
       throw new ApiError(message, status, 'LLM_ERROR');
     }
     throw err;
