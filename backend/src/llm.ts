@@ -1,4 +1,4 @@
-import axios, { isAxiosError } from 'axios';
+import axios from 'axios';
 import type { DiagramRequest, DiagramType } from '../../shared/types';
 import { ApiError } from './errors';
 import { DEFAULT_LLM_TIMEOUT_MS } from './limits';
@@ -39,13 +39,14 @@ async function requestLLM(messages: LLMMessage[], maxCompletionTokens = 1000): P
     return content.trim();
   } catch (err) {
     if (err instanceof ApiError) throw err;
-    if (isAxiosError(err)) {
-      if (err.code === 'ECONNABORTED') {
+    if (axios.isAxiosError(err)) {
+      const axiosError = err;
+      if (axiosError.code === 'ECONNABORTED') {
         throw new ApiError('LLM request timed out', 504, 'LLM_TIMEOUT');
       }
-      const providerMessage = err.response?.data?.error?.message;
-      const message = typeof providerMessage === 'string' ? providerMessage : err.message;
-      const status = err.response?.status && err.response.status >= 400 ? err.response.status : 502;
+      const providerMessage = axiosError.response?.data?.error?.message;
+      const message = typeof providerMessage === 'string' ? providerMessage : axiosError.message;
+      const status = axiosError.response?.status && axiosError.response.status >= 400 ? axiosError.response.status : 502;
       throw new ApiError(message, status, 'LLM_ERROR');
     }
     throw err;
