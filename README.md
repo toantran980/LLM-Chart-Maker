@@ -52,9 +52,9 @@ the root scripts from here; `npm run dev` starts both services in parallel.
 
 **Workspace structure:**
 - Dependencies are hoisted to root `node_modules/` (npm workspace pattern)
-- `frontend/node_modules/` contains only frontend-specific packages (e.g., `@vercel/*`)
+- `frontend/node_modules/` contains only frontend-specific packages with strict version requirements (e.g., `@vercel/*`)
 - `backend/` has no local `node_modules/` (all dependencies are in root)
-- This reduces disk space and prevents dependency conflicts
+- This reduces disk space and prevents dependency conflicts while isolating packages with strict peer dependencies
 
 ### Frontend
 
@@ -96,9 +96,10 @@ Run this command from the repository root. This project uses npm workspaces, so
 the root `package-lock.json` manages both `frontend` and `backend`; there is no
 need to run `npm install` inside those directories separately.
 
-**Note:** The workspace structure automatically hoists dependencies to the root
-`node_modules/` directory. Only frontend-specific packages (like `@vercel/*`)
-are kept in `frontend/node_modules/`.
+**Note:** The workspace structure automatically hoists most dependencies to the root
+`node_modules/` directory. However, `frontend/node_modules/` contains packages with
+strict version requirements (like `@vercel/*`) that need to be isolated to avoid
+peer dependency conflicts.
 
 ### 2. Configure environment
 
