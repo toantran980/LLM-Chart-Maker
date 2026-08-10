@@ -70,16 +70,17 @@ export default function PDFViewer({
   useEffect(() => {
     if (!file) return;
     let cancelled = false;
+    let loadingTask: ReturnType<typeof pdfjsLib.getDocument> | undefined;
     let observer: IntersectionObserver | undefined;
     let observeTimeout: ReturnType<typeof setTimeout> | undefined;
     const reader = new FileReader();
     reader.onload = async () => {
       try {
         const data = new Uint8Array(reader.result as ArrayBuffer);
-        const loadingTask = pdfjsLib.getDocument({ data });
+        loadingTask = pdfjsLib.getDocument({ data });
         const pdf = await loadingTask.promise;
         if (cancelled) {
-          await pdf.destroy();
+          loadingTask.destroy();
           return;
         }
         setNumPages(pdf.numPages);
@@ -180,6 +181,7 @@ export default function PDFViewer({
       reader.abort();
       if (observeTimeout) clearTimeout(observeTimeout);
       observer?.disconnect();
+      loadingTask?.destroy();
     };
   }, [file]);
 
