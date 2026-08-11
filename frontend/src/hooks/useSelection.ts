@@ -58,7 +58,7 @@ export function useSelection(editableRef: RefObject<HTMLElement | null>) {
         setSelectedRange(null);
         return;
       }
-  // allow selection inside highlighted spans — user might want to change or remove highlight
+      // allow selection inside highlighted spans — user might want to change or remove highlight
       const rect = range.getBoundingClientRect();
       const parentRect = editableRef.current.getBoundingClientRect();
       if (rect.height === 0 || rect.bottom <= parentRect.top || rect.top >= parentRect.bottom) {
@@ -156,7 +156,7 @@ export function useSelection(editableRef: RefObject<HTMLElement | null>) {
       // If caret is collapsed and inside a highlighted span, unwrap that span so new typing isn't highlighted
       if (sel.isCollapsed && sel.anchorNode) {
         // compute caret char offset before modification
-  const charOffset = getCaretCharacterOffsetWithin(el!, sel);
+        const charOffset = getCaretCharacterOffsetWithin(el!, sel);
         // find nearest highlighted ancestor
         let node: Node | null = sel.anchorNode;
         let span: HTMLElement | null = null;
