@@ -1,40 +1,40 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
+import type { DiagramType } from '@shared/types';
 
 import * as pdfjsLib from 'pdfjs-dist';
-import type { PDFPageProxy } from 'pdfjs-dist';
-
-// Essential CSS for text layer alignment and selection
+import PDFWorker from 'pdfjs-dist/build/pdf.worker.mjs?worker';
 import 'pdfjs-dist/web/pdf_viewer.css';
 
-// Modern Vite Worker Loader - No more external CDN or 404 issues
-import PDFWorker from 'pdfjs-dist/build/pdf.worker.mjs?worker';
-import type { DiagramType } from '@shared/types';
+import {
+  loadPDFFromFile,
+  extractHighlightsFromPDF,
+  extractFullTextFromPDF,
+  renderPageToCanvas,
+  renderTextLayer,
+  getSelectedTextFromLayer,
+  isValidSelection,
+  type Highlight,
+} from './utils/pdfUtils';
+
+import {
+  PDF_RENDER_THRESHOLD,
+  PDF_OBSERVE_DELAY,
+  MIN_SELECTION_LENGTH,
+  MIN_CONSOLE_LOG_LENGTH,
+  PDF_RENDERING_ERROR,
+  EMPTY_SELECTION_ERROR,
+  LOADING_ERROR,
+  TRUNCATION_WARNING,
+} from './utils/pdfConstants';
+
+// Initialize PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
-
-type Highlight = { text: string; color?: string };
-
-// Library-derived types (top-level, no dependency on any local `page` variable)
-type RenderParams = Parameters<PDFPageProxy['render']>[0];
-
-type TextItem = Awaited<ReturnType<PDFPageProxy['getTextContent']>>['items'][number];
-
-interface TextLayerCtor {
-  new(options: {
-    textContentSource: Awaited<ReturnType<PDFPageProxy['getTextContent']>>;
-    container: HTMLDivElement;
-    viewport: ReturnType<PDFPageProxy['getViewport']>;
-  }): { render: () => Promise<void> };
-}
 
 interface PDFViewerProps {
   file: File | null;
   onClose: () => void;
   requestDiagram: (payload: { text: string; diagramType: DiagramType }, which: 'full' | 'selection') => void;
   diagramType: DiagramType;
-}
-
-function isTextItem(item: TextItem): item is TextItem & { str: string } {
-  return 'str' in item;
 }
 
 export default function PDFViewer({
@@ -49,182 +49,198 @@ export default function PDFViewer({
   const [numPages, setNumPages] = useState<number>(0);
   const [fullPdfText, setFullPdfText] = useState<string>('');
   const [isPdfTruncated, setIsPdfTruncated] = useState(false);
+  
   const canvasRefs = useRef<Array<HTMLCanvasElement | null>>([]);
   const textLayerRefs = useRef<Array<HTMLDivElement | null>>([]);
   const viewerRef = useRef<HTMLDivElement>(null);
 
-  // Listen for global selection events to auto-sync
+  // Handle selection events
+  const handleSelection = useCallback((pageIndex: number) => {
+    const selection = window.getSelection();
+    const textLayer = textLayerRefs.current[pageIndex];
+    
+    if (!selection || !textLayer) return;
+    
+    const selectedText = getSelectedTextFromLayer(textLayer, selection);
+    
+    if (isValidSelection(selectedText, MIN_SELECTION_LENGTH)) {
+      setManualHighlights(prev => [...prev, { 
+        text: selectedText, 
+        color: 'var(--accent-primary)' 
+      }]);
+    }
+  }, []);
+
+  // Handle diagram generation from selection
+  const handleGenerateFromSelection = useCallback(() => {
+    const allText = [...highlights, ...manualHighlights]
+      .map(h => h.text)
+      .join('\n\n---\n\n');
+    
+    if (allText) {
+      requestDiagram({ text: allText, diagramType }, 'selection');
+    } else {
+      alert(EMPTY_SELECTION_ERROR);
+    }
+  }, [highlights, manualHighlights, diagramType, requestDiagram]);
+
+  // Handle diagram generation from full PDF
+  const handleGenerateFromFull = useCallback(() => {
+    if (fullPdfText) {
+      requestDiagram({ text: fullPdfText, diagramType }, 'full');
+    } else {
+      alert(LOADING_ERROR);
+    }
+  }, [fullPdfText, diagramType, requestDiagram]);
+
+  // Clear all highlights
+  const handleClearAll = useCallback(() => {
+    setManualHighlights([]);
+    setHighlights([]);
+  }, []);
+
+  // Remove specific highlight
+  const handleRemoveHighlight = useCallback((textToRemove: string) => {
+    setManualHighlights(prev => prev.filter(h => h.text !== textToRemove));
+    setHighlights(prev => prev.filter(h => h.text !== textToRemove));
+  }, []);
+
+  // Global selection listener for debugging
   useEffect(() => {
     const handleMouseUp = () => {
       const selection = window.getSelection();
       const text = selection ? selection.toString().trim() : '';
-      if (text.length > 3) {
+      if (text.length > MIN_CONSOLE_LOG_LENGTH) {
         console.log("Captured selection for analysis:", text);
       }
     };
+    
     document.addEventListener('mouseup', handleMouseUp);
     return () => document.removeEventListener('mouseup', handleMouseUp);
   }, []);
 
-  // Load and Render PDF using pdf.js
+  // Main PDF loading and processing effect
   useEffect(() => {
     if (!file) return;
+    
     let cancelled = false;
     let loadingTask: ReturnType<typeof pdfjsLib.getDocument> | undefined;
     let observer: IntersectionObserver | undefined;
     let observeTimeout: ReturnType<typeof setTimeout> | undefined;
-    const reader = new FileReader();
-    reader.onload = async () => {
+
+    const processPDF = async () => {
       try {
-        const data = new Uint8Array(reader.result as ArrayBuffer);
-        loadingTask = pdfjsLib.getDocument({ data });
-        const pdf = await loadingTask.promise;
+        const pdf = await loadPDFFromFile(file);
+        
         if (cancelled) {
-          loadingTask.destroy();
+          loadingTask?.destroy();
           return;
         }
+        
         setNumPages(pdf.numPages);
-
         setLoading(true);
         setHighlights([]);
         setManualHighlights([]);
 
-        // Extract existing highlights (annotations)
-        const allHighlights: Highlight[] = [];
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const annotations = await page.getAnnotations();
-          for (const ann of annotations) {
-            if (ann.subtype === 'Highlight') {
-              const text = ann.contents || 'Highlighted Text';
-              if (text) allHighlights.push({ text, color: '#6366f1' });
-            }
-          }
-        }
-        setHighlights(allHighlights);
+        // Extract highlights from PDF annotations
+        const pdfHighlights = await extractHighlightsFromPDF(pdf);
+        setHighlights(pdfHighlights);
 
-        // Extract full document text in background for "Diagram Entire PDF"
-        let fullText = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageStr = textContent.items.map((item) => (isTextItem(item) ? item.str : '')).join(' ');
-          fullText += pageStr + '\n\n';
-          if (fullText.length > 12000) {
-            setIsPdfTruncated(true);
-            fullText = fullText.substring(0, 12000) + '\n\n...[TRUNCATED]';
-            break;
-          }
-        }
-        setFullPdfText(fullText.trim());
+        // Extract full text for "Diagram Entire PDF" feature
+        const { text: extractedText, isTruncated: truncated } = await extractFullTextFromPDF(pdf);
+        setFullPdfText(extractedText);
+        setIsPdfTruncated(truncated);
 
         setLoading(false);
 
-        // Render pages using IntersectionObserver for performance
-        observer = new IntersectionObserver((entries) => {
-          entries.forEach(async (entry) => {
-            if (!cancelled && entry.isIntersecting) {
-              const pageNum = parseInt(entry.target.getAttribute('data-page') || '0');
-              if (pageNum > 0) {
-                const page = await pdf.getPage(pageNum);
-                const viewport = page.getViewport({ scale: 2.0 });
-
-                const canvas = canvasRefs.current[pageNum - 1];
-                if (canvas && !canvas.getAttribute('data-rendered')) {
-                  canvas.height = viewport.height;
-                  canvas.width = viewport.width;
-                  const renderContext = {
-                    canvasContext: canvas.getContext('2d')!,
-                    viewport: viewport,
-                  };
-                  await page.render(renderContext as RenderParams).promise;
-                  canvas.setAttribute('data-rendered', 'true');
-
-                  const textLayerDiv = textLayerRefs.current[pageNum - 1];
-                  if (textLayerDiv) {
-                    textLayerDiv.innerHTML = '';
-                    textLayerDiv.style.width = `${viewport.width}px`;
-                    textLayerDiv.style.height = `${viewport.height}px`;
-                    try {
-                      const textContent = await page.getTextContent();
-                      const TextLayer = (pdfjsLib as unknown as { TextLayer: TextLayerCtor }).TextLayer;
-                      const textLayer = new TextLayer({
-                        textContentSource: textContent,
-                        container: textLayerDiv,
-                        viewport: viewport,
-                      });
-                      await textLayer.render();
-                    } catch (textErr) {
-                      console.warn("Text layer skipped", textErr);
-                    }
-                  }
-                }
-              }
-            }
-          });
-        }, { threshold: 0.1 });
-
-        // Observe all page containers
-        observeTimeout = setTimeout(() => {
-          viewerRef.current?.querySelectorAll('.pdf-page-container').forEach(el => observer?.observe(el));
-        }, 500);
-      } catch (err) {
+        // Set up intersection observer for lazy rendering
+        setupIntersectionObserver(pdf);
+        
+      } catch (error) {
         if (!cancelled) {
           setLoading(false);
-          console.error('PDF Rendering Error:', err);
+          console.error(PDF_RENDERING_ERROR, error);
         }
       }
     };
-    reader.readAsArrayBuffer(file);
+
+    const setupIntersectionObserver = (pdf: pdfjsLib.PDFDocumentProxy) => {
+      observer = new IntersectionObserver(async (entries) => {
+        for (const entry of entries) {
+          if (!cancelled && entry.isIntersecting) {
+            const pageNum = parseInt(entry.target.getAttribute('data-page') || '0');
+            if (pageNum > 0) {
+              await renderPage(pdf, pageNum);
+            }
+          }
+        }
+      }, { threshold: PDF_RENDER_THRESHOLD });
+
+      // Observe all page containers after a short delay
+      observeTimeout = setTimeout(() => {
+        viewerRef.current?.querySelectorAll('.pdf-page-container')
+          .forEach(el => observer?.observe(el));
+      }, PDF_OBSERVE_DELAY);
+    };
+
+    const renderPage = async (pdf: pdfjsLib.PDFDocumentProxy, pageNum: number) => {
+      const page = await pdf.getPage(pageNum);
+      const canvas = canvasRefs.current[pageNum - 1];
+      
+      if (!canvas || canvas.getAttribute('data-rendered')) return;
+      
+      const viewport = page.getViewport({ scale: 2.0 });
+      
+      await renderPageToCanvas(page, canvas);
+      
+      const textLayerDiv = textLayerRefs.current[pageNum - 1];
+      if (textLayerDiv) {
+        await renderTextLayer(page, textLayerDiv, viewport);
+      }
+    };
+
+    processPDF();
+
     return () => {
       cancelled = true;
-      reader.abort();
       if (observeTimeout) clearTimeout(observeTimeout);
       observer?.disconnect();
       loadingTask?.destroy();
     };
   }, [file]);
 
+  // Update refs arrays when numPages changes
+  useEffect(() => {
+    canvasRefs.current = Array(numPages).fill(null);
+    textLayerRefs.current = Array(numPages).fill(null);
+  }, [numPages]);
+
   if (!file) return null;
+
+  const allHighlights = [...highlights, ...manualHighlights];
 
   return (
     <div ref={viewerRef} className="pdf-viewer-root studio-theme">
       <button className="close-pdf-btn" onClick={onClose}>
         &times; Close PDF and return to Editor
       </button>
+      
       <div className="pdf-preview-pane custom-scroll">
         {numPages === 0 && (
-          <div style={{ color: 'white', marginTop: '10rem', textAlign: 'center', padding: '2rem' }}>
-            <div className="spinner" style={{ margin: '0 auto 1.5rem' }}></div>
-            <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Processing Document...</h2>
-            <p style={{ opacity: 0.6, fontSize: '0.9rem' }}>Initializing PDF engine and loading pages.</p>
+          <div className="pdf-loading-state">
+            <div className="spinner"></div>
+            <h2>Processing Document...</h2>
+            <p>Initializing PDF engine and loading pages.</p>
           </div>
         )}
+        
         <div className="pdf-pages-container">
           {Array.from({ length: numPages }).map((_, i) => (
             <div
               key={i}
               className="pdf-page-container"
               data-page={i + 1}
-              onMouseUp={() => {
-                const sel = window.getSelection();
-                const selectedText = sel ? sel.toString().trim() : '';
-                if (selectedText.length > 5) {
-                  setManualHighlights(prev => [...prev, { text: selectedText, color: 'var(--accent-primary)' }]);
-
-                  // Visual confirmation: tint the selected spans
-                  const textLayer = textLayerRefs.current[i];
-                  if (textLayer) {
-                    const spans = textLayer.querySelectorAll('span');
-                    spans.forEach(span => {
-                      if (sel && sel.containsNode(span, true)) {
-                        span.style.background = 'rgba(99, 102, 241, 0.4)';
-                        span.style.borderRadius = '2px';
-                      }
-                    });
-                  }
-                }
-              }}
+              onMouseUp={() => handleSelection(i)}
             >
               <canvas
                 ref={(el) => { if (el) canvasRefs.current[i] = el; }}
@@ -242,24 +258,9 @@ export default function PDFViewer({
       <div className="pdf-highlights-pane glass-sidebar">
         <div className="highlights-header">
           <div className="premium-badge">AI POWERED</div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0 }}>Document Studio</h3>
-            <button
-              className="secondary-btn-xs"
-              onClick={() => {
-                setManualHighlights([]);
-                setHighlights([]);
-              }}
-              style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#94a3b8',
-                padding: '4px 8px',
-                fontSize: '0.65rem',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
+          <div className="highlights-header-controls">
+            <h3>Document Studio</h3>
+            <button className="secondary-btn-xs" onClick={handleClearAll}>
               Clear All
             </button>
           </div>
@@ -274,39 +275,24 @@ export default function PDFViewer({
 
           <button
             className="primary-btn-sm"
-            style={{ marginTop: '1.5rem', width: '100%' }}
-            onClick={() => {
-              const allText = [...highlights, ...manualHighlights].map(h => h.text).join('\n\n---\n\n');
-              if (allText) {
-                requestDiagram({ text: allText, diagramType }, 'selection');
-              } else {
-                alert("Please select some text on the PDF first!");
-              }
-            }}
+            onClick={handleGenerateFromSelection}
           >
             🚀 Generate Diagram from Selection
           </button>
 
-          <div style={{ margin: '1rem 0', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>OR</div>
+          <div className="divider">OR</div>
 
           <button
             className="secondary-btn-xs"
-            style={{ width: '100%', padding: '0.75rem', fontSize: '0.9rem', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}
-            onClick={() => {
-              if (fullPdfText) {
-                requestDiagram({ text: fullPdfText, diagramType }, 'full');
-              } else {
-                alert("Please wait for the document to finish loading.");
-              }
-            }}
+            onClick={handleGenerateFromFull}
             disabled={loading || !fullPdfText}
           >
             📄 Diagram Entire PDF
           </button>
 
           {isPdfTruncated && (
-            <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '0.5rem', borderRadius: '4px', textAlign: 'center' }}>
-              ⚠️ Document is very long. Only the first ~12,000 characters will be sent to the LLM.
+            <div className="truncation-warning">
+              ⚠️ {TRUNCATION_WARNING}
             </div>
           )}
         </div>
@@ -319,26 +305,23 @@ export default function PDFViewer({
         )}
 
         <div className="highlights-list-modern custom-scroll">
-          {[...highlights, ...manualHighlights].length === 0 && !loading && (
+          {allHighlights.length === 0 && !loading && (
             <div className="empty-state-modern">
               <div className="empty-icon">📄</div>
               <p>Your workspace is empty.</p>
               <span>Highlight any text on the left to start!</span>
             </div>
           )}
-          {[...highlights, ...manualHighlights].reverse().map((hl, i) => (
+          
+          {allHighlights.reverse().map((hl, i) => (
             <div key={i} className="highlight-card-premium">
               <div className="highlight-accent" style={{ background: hl.color || 'var(--accent-primary)' }} />
               <div className="highlight-body">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div className="highlight-content-wrapper">
                   <div className="highlight-text-content">{hl.text}</div>
                   <button
-                    onClick={() => {
-                      // Filter out based on text content (basic approach)
-                      setManualHighlights(prev => prev.filter(h => h.text !== hl.text));
-                      setHighlights(prev => prev.filter(h => h.text !== hl.text));
-                    }}
-                    style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0 4px' }}
+                    className="highlight-remove-btn"
+                    onClick={() => handleRemoveHighlight(hl.text)}
                   >
                     &times;
                   </button>
