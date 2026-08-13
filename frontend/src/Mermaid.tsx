@@ -19,10 +19,97 @@ function isMermaidTheme(value: string): value is MermaidTheme {
   return (VALID_THEMES as string[]).includes(value);
 }
 
+/* ---------- Safe DOM helpers (no innerHTML with user content) ---------- */
+
+/** Clear a container and insert a single text message element. */
+function clearAndSetMessage(container: HTMLElement, text: string, className: string) {
+  container.textContent = '';
+  const el = document.createElement('div');
+  el.className = className;
+  el.textContent = text;
+  if (className === 'mermaid-empty') {
+    el.style.color = 'gray';
+    el.style.fontStyle = 'italic';
+    el.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+    el.style.whiteSpace = 'pre-wrap';
+  }
+  container.appendChild(el);
+}
+
+/**
+ * Build the error display using safe DOM APIs.
+ * The error `message` is set via `textContent` so hostile strings
+ * (e.g. "<img onerror=alert(1)>") are rendered as harmless text.
+ */
+function buildErrorDisplay(container: HTMLElement, message: string) {
+  container.textContent = '';
+
+  const box = document.createElement('div');
+  box.className = 'mermaid-error-box';
+  Object.assign(box.style, {
+    color: '#ef4444',
+    padding: '1.5rem',
+    background: '#fef2f2',
+    border: '1px solid #fee2e2',
+    borderRadius: '12px',
+    fontSize: '0.95rem',
+    maxWidth: '100%',
+  });
+
+  // Header
+  const header = document.createElement('div');
+  Object.assign(header.style, {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    marginBottom: '0.75rem',
+  });
+  const title = document.createElement('strong');
+  title.style.fontSize = '1.1rem';
+  title.textContent = '⚠️ Diagram Render Error';
+  header.appendChild(title);
+  box.appendChild(header);
+
+  // Description
+  const desc = document.createElement('p');
+  Object.assign(desc.style, { margin: '0 0 1rem 0', opacity: '0.8' });
+  desc.textContent = 'The generated Mermaid code has a syntax error. This can happen with complex text inputs.';
+  box.appendChild(desc);
+
+  // Collapsible details
+  const details = document.createElement('details');
+  details.style.cursor = 'pointer';
+  const summary = document.createElement('summary');
+  Object.assign(summary.style, { fontWeight: '600', color: '#b91c1c' });
+  summary.textContent = 'Show Error Details';
+  details.appendChild(summary);
+
+  const pre = document.createElement('pre');
+  Object.assign(pre.style, {
+    marginTop: '0.5rem',
+    whiteSpace: 'pre-wrap',
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+    background: '#fff',
+    padding: '1rem',
+    borderRadius: '6px',
+    border: '1px solid #fecaca',
+    fontSize: '0.85rem',
+  });
+  // Safe: textContent escapes any HTML in the error message
+  pre.textContent = message || 'Unknown syntax error';
+  details.appendChild(pre);
+  box.appendChild(details);
+
+  container.appendChild(box);
+}
+
+/* ---------- Mermaid render function ---------- */
+
 async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: string = 'base') {
   const resolvedTheme: MermaidTheme = isMermaidTheme(theme) ? theme : 'base';
   mermaid.initialize({
     startOnLoad: false,
+    securityLevel: 'strict',
     theme: resolvedTheme,
     themeVariables: {
       primaryColor: '#6366f1',
@@ -54,7 +141,9 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: st
   const uid = 'm' + Math.random().toString(36).substring(2, 10);
 
   try {
-    // Mermaid render returns a Promise<{ svg, bindFunctions }>
+    // Mermaid render returns a Promise<{ svg, bindFunctions }>.
+    // The SVG is safe to assign via innerHTML because securityLevel: 'strict'
+    // sanitises the output (strips scripts, click bindings, javascript: URIs).
     const { svg } = await mermaid.render(uid, def);
     containerEl.innerHTML = svg;
 
@@ -65,6 +154,8 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: st
   }
 }
 
+/* ---------- React component ---------- */
+
 export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -72,45 +163,17 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
     if (!ref.current) return;
 
     // Clear previous content
-    ref.current.innerHTML = '<div class="mermaid-loading">Rendering diagram...</div>';
+    clearAndSetMessage(ref.current, 'Rendering diagram...', 'mermaid-loading');
 
     if (!chart || !chart.trim()) {
-      ref.current.innerHTML = '<pre style="color:gray; font-style: italic;">No diagram data available</pre>';
+      clearAndSetMessage(ref.current, 'No diagram data available', 'mermaid-empty');
       return;
     }
 
     renderMermaid(chart, ref.current, theme).catch((err) => {
       if (ref.current) {
         const message = err instanceof Error ? err.message : String(err);
-        ref.current.innerHTML = `
-          <div class="mermaid-error-box" style="
-            color: #ef4444; 
-            padding: 1.5rem; 
-            background: #fef2f2; 
-            border: 1px solid #fee2e2; 
-            border-radius: 12px; 
-            font-size: 0.95rem;
-            max-width: 100%;
-          ">
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-              <strong style="font-size: 1.1rem;">⚠️ Diagram Render Error</strong>
-            </div>
-            <p style="margin: 0 0 1rem 0; opacity: 0.8;">The generated Mermaid code has a syntax error. This can happen with complex text inputs.</p>
-            <details style="cursor: pointer;">
-              <summary style="font-weight: 600; color: #b91c1c;">Show Error Details</summary>
-              <pre style="
-                margin-top: 0.5rem; 
-                white-space: pre-wrap; 
-                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-                background: #fff;
-                padding: 1rem;
-                border-radius: 6px;
-                border: 1px solid #fecaca;
-                font-size: 0.85rem;
-              ">${message || 'Unknown syntax error'}</pre>
-            </details>
-          </div>
-        `;
+        buildErrorDisplay(ref.current, message);
       }
       if (onError) {
         onError(err instanceof Error ? err : new Error(String(err)));
@@ -205,4 +268,3 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
     </div>
   );
 }
-

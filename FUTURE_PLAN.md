@@ -217,9 +217,9 @@ not a prerequisite for new features.
 
 **Effort:** ~2 hrs | **Value:** ⭐⭐⭐⭐⭐
 
-- [ ] Explicitly configure Mermaid's strict security mode
-- [ ] Remove unescaped error-message interpolation into `innerHTML`
-- [ ] Test hostile labels and malformed Mermaid input
+- [X] Explicitly configure Mermaid's strict security mode
+- [X] Remove unescaped error-message interpolation into `innerHTML`
+- [X] Test hostile labels and malformed Mermaid input
 
 ### 18. Reproducible Diagram History
 
