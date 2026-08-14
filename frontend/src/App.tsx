@@ -121,20 +121,17 @@ export default function App() {
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
       const modifier = event.ctrlKey || event.metaKey;
-      const target = event.target as HTMLElement | null;
-      const isTyping = target?.matches('input, textarea, select, [contenteditable="true"]');
 
-      if (isTyping) return;
+      if (modifier && event.shiftKey && event.key === 'Enter') {
+        event.preventDefault();
+        generateForSelection();
+        return;
+      }
 
       if (modifier && event.key === 'Enter') {
         event.preventDefault();
         const latestText = editableRef.current ? editableRef.current.innerText : text;
         requestDiagram({ text: latestText, diagramType, direction }, 'full');
-      }
-
-      if (modifier && event.shiftKey && event.key.toLowerCase() === 's') {
-        event.preventDefault();
-        generateForSelection();
       }
     };
 
@@ -174,7 +171,7 @@ export default function App() {
           {fallbackMode && <span style={{ color: '#f59e0b', fontWeight: 'bold' }}> (Local Parser)</span>}
         </p>
         <p className="shortcut-note">
-          Keyboard shortcuts: <strong>Ctrl/Cmd+Enter</strong> for full generation, <strong>Ctrl/Cmd+Shift+S</strong> for selection.
+          Keyboard shortcuts: <strong>Ctrl/Cmd+Enter</strong> for full generation, <strong>Ctrl/Cmd+Shift+Enter</strong> for selection.
         </p>
       </header>
 

@@ -1,21 +1,30 @@
 # LLM Chart Maker
 
-LLM Chart Maker is a full-stack TypeScript monorepo that turns text and PDF content into Mermaid diagrams using AI. The app can generate diagrams from selected document text, refine existing diagrams with natural language, and recover from Mermaid syntax errors automatically.
+LLM Chart Maker is a full-stack TypeScript app that turns plain text and PDF content into editable Mermaid diagrams. It uses OpenAI when configured and falls back to a local parser when the LLM is unavailable.
 
 Live App: https://llm-chart-maker-frontend.vercel.app/
 
-[![Try it on Vercel](https://img.shields.io/badge/Try%20it-Vercel-000000?style=for-the-badge&logo=vercel)](https://llm-chart-maker-frontend.vercel.app/)
+[![Try it on Vercel](<https://img.shields.io/badge/Try%20it-Vercel-000000?style=for-the-badge&logo=vercel>)](https://llm-chart-maker-frontend.vercel.app/)
 
 ---
 
-## What it does
+## Current capabilities
 
-- Generate Mermaid diagrams from plain text or PDF content
-- Highlight text in documents and turn selections into diagrams
-- Refine diagrams with natural language instructions
-- Auto-fix Mermaid syntax errors on render failure
-- Export diagrams as SVG or PNG
-- Save diagram history in local storage for quick restoration
+- Generate flowcharts, timelines, rules maps, Gantt charts, ER diagrams, mind maps, and Git graphs
+- Generate from all editor text, a text selection, highlighted text, a PDF selection, or an entire PDF
+- Choose an automatic, left-to-right, right-to-left, top-to-bottom, or bottom-to-top layout where supported
+- Refine a diagram with natural-language instructions and request a plain-language description
+- Edit Mermaid source in the app, then copy the code or an embeddable SVG snippet
+- Export rendered diagrams as SVG or PNG; zoom and pan the canvas; select one of five Mermaid themes
+- Recover from Mermaid render errors with an automatic fix attempt and a manual retry
+- Restore the most recent 20 diagrams from browser-local history
+
+### Keyboard shortcuts
+
+- `Ctrl/Cmd+Enter` — generate a diagram from all editor text
+- `Ctrl/Cmd+Shift+Enter` — generate from the current selection, highlights, or editor text fallback
+
+History is stored only in the current browser's local storage. It is not synced across devices or user accounts.
 
 ---
 
@@ -37,12 +46,19 @@ repository root (npm workspace)
 ```
 
 ```text
-Browser
-  └─ frontend (React/Vite, :5173)
-       ├─ renders Mermaid diagrams and PDF content
-       └─ calls backend API
-            └─ backend (Express, :4173)
-                 └─ calls the configured LLM provider
+Local development
+  Browser → React + Vite frontend (:5173)
+              └─ Vite proxies /api requests → Express backend (:4173)
+                                                 └─ OpenAI API
+
+Docker Compose
+  Browser → Nginx frontend (:80)
+              └─ proxies /api requests → Express backend (:4000)
+                                             └─ OpenAI API
+
+Separate frontend/backend deployment
+  Browser → static frontend
+              └─ calls VITE_API_BASE → Express backend → OpenAI API
 
 frontend and backend both import shared types from shared/types.ts.
 ```
@@ -51,6 +67,7 @@ The root workspace owns installation and orchestration. Run `npm install` and
 the root scripts from here; `npm run dev` starts both services in parallel.
 
 **Workspace structure:**
+
 - Dependencies are hoisted to root `node_modules/` (npm workspace pattern)
 - `frontend/node_modules/` contains only frontend-specific packages with strict version requirements (e.g., `@vercel/*`)
 - `backend/` has no local `node_modules/` (all dependencies are in root)
@@ -60,27 +77,16 @@ the root scripts from here; `npm run dev` starts both services in parallel.
 
 - React + TypeScript
 - Vite-powered dev server and build pipeline
-- Mermaid.js for diagram rendering
-- PDF.js integration for PDF text extraction and selection
-- Auto theme switcher, code editor, and diagram history
+- Mermaid.js with strict security mode, theme controls, source editing, zoom/pan, and export tools
+- PDF.js integration for text extraction, document selection, and full-PDF generation
+- Browser-local diagram history and light/dark interface mode
 
 ### Backend
 
-- Express REST API
-- OpenAI/LLM integration for diagram generation, refinement, and Mermaid fixes
+- Express REST API for generation, refinement, Mermaid fixes, and diagram descriptions
+- OpenAI-compatible LLM integration with a local fallback for initial diagram generation
+- Request validation, payload limits, CORS allowlisting, rate limiting, timeouts, and a `/health` endpoint
 - Shared request/response types from `shared/types.ts`
-- Configurable CORS and health checks
-
----
-
-## Key features
-
-- AI diagram generation from unstructured text or PDF content
-- Natural language refine mode for in-place diagram edits
-- Mermaid auto-fix on client-side render failures
-- Export rendered diagrams to SVG and PNG
-- History panel with localStorage persistence
-- Accessible dark/light theme support
 
 ---
 
@@ -108,6 +114,8 @@ Create a `.env` file in the repository root:
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
 ```
+
+`OPENAI_API_KEY` enables LLM generation, refinement, syntax repairs, and descriptions. Without it, initial diagram generation and descriptions use local fallbacks; refinement and syntax repair require a key.
 
 ### 3. Start the app
 
@@ -163,7 +171,10 @@ docker compose up --build
 
 Then visit `http://localhost` in your browser.
 
+Provide `OPENAI_API_KEY` in the root `.env` file before starting Docker if you want LLM-powered features. Docker Compose passes it to the backend container.
+
 **Docker setup:**
+
 - Build context is set to repository root (`.`)
 - `.dockerignore` is at root level to match the build context
 - Dockerfiles remain in `frontend/` and `backend/` subdirectories
@@ -173,17 +184,26 @@ Then visit `http://localhost` in your browser.
 
 ## Deployment notes
 
-- **Frontend (Vercel)**: Auto-builds from source using CI workflow
-- **Backend (Render)**: Auto-builds from source using build command
-- Both platforms ignore committed `node_modules` and `dist/` directories
-- Build artifacts are generated during deployment, not committed to git
-- CORS is configured using `ALLOWED_ORIGIN` and the allowed local dev origins
+- Deploy the frontend as a static Vite build and the backend as a Node/Express service, or deploy both with Docker Compose.
+- Set `VITE_API_BASE` on a separately deployed frontend to the backend's public URL.
+- Set `ALLOWED_ORIGIN` on the backend to the exact public frontend origin. Local Vite and preview origins are allowed for development.
+- Store `OPENAI_API_KEY` only in deployment secrets; never expose it through a `VITE_*` variable or commit it to the repository.
+- The GitHub Actions workflow runs tests, frontend linting, and a full build on pull requests and pushes to `main` or `master`.
+- The current rate limiter is in-memory and is suitable for a single backend instance. Move it to a shared store or hosting/WAF limit before scaling horizontally.
 
 ---
 
-## Adding diagram refinement
+## API endpoints
 
-The app supports an iterative refine flow via the `RefineBar` component. When a diagram exists, users can type instructions such as "add an error step after step 3" and the backend will edit the diagram in place.
+| Endpoint               | Purpose                                                           |
+| ---------------------- | ----------------------------------------------------------------- |
+| `GET /health`        | Reports backend availability and whether fallback mode is active. |
+| `POST /api/diagram`  | Generates a Mermaid diagram from source text.                     |
+| `POST /api/refine`   | Refines an existing diagram from an instruction.                  |
+| `POST /api/fix`      | Attempts to repair Mermaid code after a render error.             |
+| `POST /api/describe` | Returns a plain-language description of Mermaid code.             |
+
+LLM routes validate request bodies and enforce size limits. Their default rate limit is 20 requests per IP per minute; configure `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS` for a different deployment policy.
 
 ---
 
