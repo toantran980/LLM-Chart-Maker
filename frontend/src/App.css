@@ -109,18 +109,6 @@ header h1 {
   overflow: hidden;
 }
 
-.pdf-canvas {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.textLayer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-}
 
 .pdf-highlights-pane {
   width: 320px;
@@ -1343,25 +1331,34 @@ body.dark-mode .section-result {
   left: 0;
   right: 0;
   bottom: 0;
-  color: transparent;
-  opacity: 0.4 !important; /* Visible for final verification */
-  line-height: 1.0;
-  z-index: 1000 !important;
-  pointer-events: auto !important;
-  user-select: text !important;
+  overflow: clip;
+  pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .textLayer ::selection {
-  background: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.35);
   color: transparent;
 }
 
-.textLayer span {
-  color: transparent;
+.textLayer br::selection {
+  background: transparent !important;
+}
+
+.textLayer .endOfContent {
+  display: block;
   position: absolute;
-  white-space: pre;
-  cursor: text;
-  transform-origin: 0% 0%;
+  inset: 100% 0 0;
+  user-select: none;
+}
+
+.pdf-highlight-overlay {
+  position: absolute;
+  background-color: rgba(99, 102, 241, 0.35);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 2;
 }
 
 .close-pdf-btn {

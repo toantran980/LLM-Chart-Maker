@@ -12,11 +12,13 @@ import {
   renderPageToCanvas,
   renderTextLayer,
   getSelectedTextFromLayer,
+  clearAllHighlightOverlays,
   isValidSelection,
   type Highlight,
 } from './utils/pdfUtils';
 
 import {
+  PDF_SCALE,
   PDF_RENDER_THRESHOLD,
   PDF_OBSERVE_DELAY,
   MIN_SELECTION_LENGTH,
@@ -97,6 +99,7 @@ export default function PDFViewer({
   const handleClearAll = useCallback(() => {
     setManualHighlights([]);
     setHighlights([]);
+    clearAllHighlightOverlays(viewerRef.current);
   }, []);
 
   // Remove specific highlight
@@ -189,9 +192,7 @@ export default function PDFViewer({
       
       if (!canvas || canvas.getAttribute('data-rendered')) return;
       
-      const viewport = page.getViewport({ scale: 2.0 });
-      
-      await renderPageToCanvas(page, canvas);
+      const viewport = await renderPageToCanvas(page, canvas, PDF_SCALE);
       
       const textLayerDiv = textLayerRefs.current[pageNum - 1];
       if (textLayerDiv) {
@@ -249,6 +250,7 @@ export default function PDFViewer({
               <div
                 ref={(el) => { if (el) textLayerRefs.current[i] = el; }}
                 className="textLayer"
+                onMouseUp={() => handleSelection(i)}
               />
             </div>
           ))}

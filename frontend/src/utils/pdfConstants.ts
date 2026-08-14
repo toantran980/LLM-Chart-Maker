@@ -1,6 +1,6 @@
 // PDF rendering and processing constants
 
-export const PDF_SCALE = 2.0;
+export const PDF_SCALE = 1.15;
 export const PDF_RENDER_THRESHOLD = 0.1;
 export const PDF_OBSERVE_DELAY = 500;
 export const PDF_MAX_TEXT_LENGTH = 12000;

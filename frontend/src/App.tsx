@@ -236,12 +236,12 @@ export default function App() {
         </div>
       )}
       <Result mermaid={mermaid} setMermaid={setMermaid} />
-      <DiagramHistory 
-        refreshTrigger={historyRefresh} 
+      <DiagramHistory
+        refreshTrigger={historyRefresh}
         onRestore={(entry: HistoryEntry) => {
           setMermaid(entry.mermaid);
           setDiagramType(entry.diagramType);
-        }} 
+        }}
       />
     </div>
   );
