@@ -17,14 +17,6 @@ The LLM already knows all Mermaid diagram syntax — just expose more types in t
 - [X] Hide direction picker for types that don't support it (gantt, er, mindmap, gitgraph)
 - [X] Add direction rules in `llm.ts` for new types
 
-```
-flowchart → existing ✅
-gantt     → project timelines
-er        → database/entity schemas
-mindmap   → brainstorming, concept maps
-gitgraph  → git branch history
-```
-
 ---
 
 ### 2. Diagram History (localStorage)
