@@ -4,7 +4,24 @@ LLM Chart Maker is a full-stack TypeScript app that turns plain text and PDF con
 
 Live App: https://llm-chart-maker-frontend.vercel.app/
 
-[![Try it on Vercel](<https://img.shields.io/badge/Try%20it-Vercel-000000?style=for-the-badge&logo=vercel>)](https://llm-chart-maker-frontend.vercel.app/)
+[![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Mermaid](https://img.shields.io/badge/Mermaid-FF3670?style=for-the-badge&logo=mermaid&logoColor=white)](https://mermaid.js.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+[![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/features/actions)
+
+---
+
+## Tech stack
+
+- **Frontend:** React 19, TypeScript, Vite, Mermaid.js, PDF.js, Vitest, ESLint
+- **Backend:** Node.js, Express, TypeScript, Vitest, Axios
+- **Infrastructure:** npm workspaces, Docker Compose, Nginx, GitHub Actions CI, Vercel (frontend), Render (backend)
+- **AI:** OpenAI-compatible LLM integration with a local parser fallback
 
 ---
 
@@ -63,51 +80,15 @@ Separate frontend/backend deployment
 frontend and backend both import shared types from shared/types.ts.
 ```
 
-The root workspace owns installation and orchestration. Run `npm install` and
-the root scripts from here; `npm run dev` starts both services in parallel.
-
-**Workspace structure:**
-
-- Dependencies are hoisted to root `node_modules/` (npm workspace pattern)
-- `frontend/node_modules/` contains only frontend-specific packages with strict version requirements (e.g., `@vercel/*`)
-- `backend/` has no local `node_modules/` (all dependencies are in root)
-- This reduces disk space and prevents dependency conflicts while isolating packages with strict peer dependencies
-
-### Frontend
-
-- React + TypeScript
-- Vite-powered dev server and build pipeline
-- Mermaid.js with strict security mode, theme controls, source editing, zoom/pan, and export tools
-- PDF.js integration for text extraction, document selection, and full-PDF generation
-- Browser-local diagram history and light/dark interface mode
-
-### Backend
-
-- Express REST API for generation, refinement, Mermaid fixes, and diagram descriptions
-- OpenAI-compatible LLM integration with a local fallback for initial diagram generation
-- Request validation, payload limits, CORS allowlisting, rate limiting, timeouts, and a `/health` endpoint
-- Shared request/response types from `shared/types.ts`
+Dependencies are hoisted to root `node_modules/` via npm workspaces. `frontend/node_modules/` contains only packages with strict version requirements (e.g., `@vercel/*`).
 
 ---
 
 ## Quick start
 
-### 1. Install dependencies
-
 ```bash
 npm install
 ```
-
-Run this command from the repository root. This project uses npm workspaces, so
-the root `package-lock.json` manages both `frontend` and `backend`; there is no
-need to run `npm install` inside those directories separately.
-
-**Note:** The workspace structure automatically hoists most dependencies to the root
-`node_modules/` directory. However, `frontend/node_modules/` contains packages with
-strict version requirements (like `@vercel/*`) that need to be isolated to avoid
-peer dependency conflicts.
-
-### 2. Configure environment
 
 Create a `.env` file in the repository root:
 
@@ -117,13 +98,9 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 `OPENAI_API_KEY` enables LLM generation, refinement, syntax repairs, and descriptions. Without it, initial diagram generation and descriptions use local fallbacks; refinement and syntax repair require a key.
 
-### 3. Start the app
-
 ```bash
 npm run dev
 ```
-
-Then open:
 
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:4173`
@@ -133,63 +110,24 @@ Then open:
 
 ## Scripts
 
-From the repository root:
+| Command                   | Description                         |
+| ------------------------- | ----------------------------------- |
+| `npm run dev`           | Start frontend and backend together |
+| `npm run build`         | Build frontend and backend          |
+| `npm run test`          | Run frontend and backend tests      |
+| `npm run frontend:lint` | Lint the frontend                   |
 
-```bash
-npm run dev         # start frontend and backend together
-npm run build       # build frontend and backend
-npm run test        # run frontend and backend tests
-npm run frontend:lint # lint the frontend
-```
-
-`npm run dev` is the normal local-development command. It starts the frontend
-and backend together, so you do not need separate terminals or `cd frontend` /
-`cd backend` before starting the app.
-
-Use the workspace-specific root scripts only when you intentionally want to run
-one service or task by itself:
-
-```bash
-npm run backend:dev
-npm run backend:build
-npm run backend:test
-npm run frontend:dev
-npm run frontend:build
-npm run frontend:test
-npm run frontend:lint
-```
+Individual workspace scripts are available for running one service by itself (`npm run backend:dev`, `npm run frontend:build`, etc.).
 
 ---
 
 ## Docker
 
-Run the full stack with Docker Compose:
-
 ```bash
 docker compose up --build
 ```
 
-Then visit `http://localhost` in your browser.
-
-Provide `OPENAI_API_KEY` in the root `.env` file before starting Docker if you want LLM-powered features. Docker Compose passes it to the backend container.
-
-**Docker setup:**
-
-- Build context is set to repository root (`.`)
-- `.dockerignore` is at root level to match the build context
-- Dockerfiles remain in `frontend/` and `backend/` subdirectories
-- This structure ensures proper exclusion of `node_modules`, `dist/`, and other build artifacts
-
----
-
-## Deployment notes
-
-- Deploy the frontend as a static Vite build and the backend as a Node/Express service, or deploy both with Docker Compose.
-- Set `VITE_API_BASE` on a separately deployed frontend to the backend's public URL.
-- Set `ALLOWED_ORIGIN` on the backend to the exact public frontend origin. Local Vite and preview origins are allowed for development.
-- Store `OPENAI_API_KEY` only in deployment secrets; never expose it through a `VITE_*` variable or commit it to the repository.
-- The GitHub Actions workflow runs tests, frontend linting, and a full build on pull requests and pushes to `main` or `master`.
-- The current rate limiter is in-memory and is suitable for a single backend instance. Move it to a shared store or hosting/WAF limit before scaling horizontally.
+Visit `http://localhost` in your browser. Provide `OPENAI_API_KEY` in the root `.env` file before starting if you want LLM-powered features.
 
 ---
 
@@ -203,23 +141,10 @@ Provide `OPENAI_API_KEY` in the root `.env` file before starting Docker if you w
 | `POST /api/fix`      | Attempts to repair Mermaid code after a render error.             |
 | `POST /api/describe` | Returns a plain-language description of Mermaid code.             |
 
-LLM routes validate request bodies and enforce size limits. Their default rate limit is 20 requests per IP per minute; configure `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS` for a different deployment policy.
-
----
-
-## Project structure
-
-- `frontend/` — UI, Mermaid rendering, diagram history, refine input
-- `backend/` — API endpoints for `/api/diagram`, `/api/refine`, `/api/fix`, and `/api/describe`
-- `shared/` — shared TypeScript types for both frontend and backend
-- `.gitignore` — Consolidated ignore patterns for entire workspace (root only)
-- `.dockerignore` — Consolidated Docker ignore patterns at root level
-- `docker-compose.yml` — Docker orchestration for full stack deployment
+LLM routes validate request bodies and enforce size limits. Default rate limit: 20 requests per IP per minute. Configure `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS` for a different policy.
 
 ---
 
 ## License
 
-This project is open source under the MIT License.
-
-See the [LICENSE](LICENSE) file for details.
+This project is open source under the MIT License. See the [LICENSE](LICENSE) file for details.
