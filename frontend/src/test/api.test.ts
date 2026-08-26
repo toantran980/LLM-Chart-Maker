@@ -104,3 +104,31 @@ describe('postFix', () => {
     await expect(postDiagram({ text: 'A', diagramType: 'flowchart' })).rejects.toThrow('Too many requests');
   });
 });
+
+describe('postSuggestType', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it('posts text to the suggest-type endpoint', async () => {
+    vi.stubEnv('VITE_API_BASE', 'https://api.example.com');
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ suggestedType: 'gantt', reason: 'Contains task timeline and dates' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { postSuggestType } = await import('../utils/api');
+    const result = await postSuggestType('Sprint 1: Design (Day 1-3), Code (Day 4-8)');
+
+    expect(fetchMock).toHaveBeenCalledWith('https://api.example.com/api/suggest-type', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: 'Sprint 1: Design (Day 1-3), Code (Day 4-8)' }),
+    });
+    expect(result.suggestedType).toBe('gantt');
+    expect(result.reason).toContain('timeline');
+  });
+});
+

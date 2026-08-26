@@ -1,7 +1,7 @@
 import FileUpload from '../FileUpload';
-import type { DiagramType } from '@shared/types';
+import type { DiagramType, DiagramSuggestionResponse } from '@shared/types';
 
-interface Props {
+interface ControlsProps {
   diagramType: DiagramType;
   setDiagramType: (t: DiagramType) => void;
   direction: string;
@@ -12,6 +12,11 @@ interface Props {
   loadingSelection: boolean;
   hasSelectionOrHighlights: boolean;
   onFileLoaded: (content: string, file: File) => void;
+  onSuggestType?: () => void;
+  loadingSuggest?: boolean;
+  suggestion?: DiagramSuggestionResponse | null;
+  onAcceptSuggestion?: () => void;
+  onDismissSuggestion?: () => void;
 }
 
 const DIRECTIONS = [
@@ -21,6 +26,16 @@ const DIRECTIONS = [
   { value: 'TD', label: '↓ Top to Bottom' },
   { value: 'BT', label: '↑ Bottom to Top' },
 ];
+
+const TYPE_NAMES: Record<DiagramType, string> = {
+  flowchart: '📊 Flowchart',
+  timeline: '⏳ Timeline',
+  rules: '🛡️ Rules Map',
+  gantt: '📅 Gantt Chart',
+  er: '🗃️ ER Diagram',
+  mindmap: '🧠 Mindmap',
+  gitgraph: '🌿 GitGraph',
+};
 
 export default function Controls({ 
   diagramType, 
@@ -32,32 +47,74 @@ export default function Controls({
   loadingFull, 
   loadingSelection, 
   hasSelectionOrHighlights, 
-  onFileLoaded 
-}: Props) {
+  onFileLoaded,
+  onSuggestType,
+  loadingSuggest = false,
+  suggestion = null,
+  onAcceptSuggestion,
+  onDismissSuggestion,
+}: ControlsProps) {
   const showDirection = diagramType === 'flowchart' || diagramType === 'rules';
+
+  const handleTypeChange = (newType: DiagramType) => {
+    setDiagramType(newType);
+    if (suggestion && onDismissSuggestion) {
+      onDismissSuggestion();
+    }
+  };
 
   return (
     <div className="controls">
       <div className="settings-grid">
+        {/* Diagram Type Selector & Suggestion */}
         <div className="setting-item">
-          <label htmlFor="diagram-type-select" className="small-section">Diagram Type</label>
+          <div className="setting-item-header">
+            <label htmlFor="diagram-type-select" className="small-section" style={{ margin: 0 }}>
+              Diagram Type
+            </label>
+            {onSuggestType && (
+              <button
+                type="button"
+                onClick={onSuggestType}
+                disabled={loadingSuggest}
+                className="suggest-type-trigger-btn"
+                title="Recommend the best diagram type from your text"
+                aria-label="Suggest diagram type"
+              >
+                {loadingSuggest ? (
+                  <span className="spinner" style={{ width: '10px', height: '10px', borderWidth: '1.5px' }} />
+                ) : (
+                  '✨ Suggest Type'
+                )}
+              </button>
+            )}
+          </div>
+
           <select
             id="diagram-type-select"
             value={diagramType}
-            onChange={(e) => setDiagramType(e.target.value as DiagramType)}
+            onChange={(e) => handleTypeChange(e.target.value as DiagramType)}
             className="modern-select"
             aria-label="Choose diagram type"
           >
-            <option value="flowchart">📊 Flowchart</option>
-            <option value="timeline">⏳ Timeline</option>
-            <option value="rules">🛡️ Rules Map</option>
-            <option value="gantt">📅 Gantt Chart</option>
-            <option value="er">🗃️ ER Diagram</option>
-            <option value="mindmap">🧠 Mindmap</option>
-            <option value="gitgraph">🌿 GitGraph</option>
+            {Object.entries(TYPE_NAMES).map(([typeKey, typeLabel]) => (
+              <option key={typeKey} value={typeKey}>
+                {typeLabel}
+              </option>
+            ))}
           </select>
+
+          {suggestion && (
+            <TypeSuggestionBanner
+              suggestion={suggestion}
+              currentType={diagramType}
+              onAccept={onAcceptSuggestion}
+              onDismiss={onDismissSuggestion}
+            />
+          )}
         </div>
 
+        {/* Direction Selector */}
         {showDirection && (
           <div className="setting-item">
             <label htmlFor="diagram-direction-select" className="small-section">Direction</label>
@@ -68,28 +125,36 @@ export default function Controls({
               className="modern-select"
               aria-label="Choose diagram direction"
             >
-              {DIRECTIONS.map(d => (
+              {DIRECTIONS.map((d) => (
                 <option key={d.value} value={d.value}>{d.label}</option>
               ))}
             </select>
           </div>
         )}
 
+        {/* Generation Actions & File Upload */}
         <div className="setting-item">
           <label className="small-section">Actions</label>
           <div className="button-row">
-            <button onClick={onGenerateFull} className="secondary-btn" disabled={loadingFull} aria-label="Generate diagram from all editable text">
-              {loadingFull ? <span className="spinner"></span> : '🚀 Generate from Full Text'}
+            <button
+              type="button"
+              onClick={onGenerateFull}
+              className="secondary-btn"
+              disabled={loadingFull}
+              aria-label="Generate diagram from all editable text"
+            >
+              {loadingFull ? <span className="spinner" /> : '🚀 Generate from Full Text'}
             </button>
             <button
-              onMouseDown={e => e.preventDefault()}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={onGenerateSelection}
               className="primary-btn"
               disabled={loadingSelection || !hasSelectionOrHighlights}
               title={!hasSelectionOrHighlights ? 'Select or highlight text first' : 'Generate diagram for selection'}
               aria-label="Generate diagram for selected content"
             >
-              {loadingSelection ? <span className="spinner"></span> : '🎯 Generate for Selection'}
+              {loadingSelection ? <span className="spinner" /> : '🎯 Generate for Selection'}
             </button>
             <FileUpload onFileLoaded={onFileLoaded} />
           </div>
@@ -99,4 +164,51 @@ export default function Controls({
   );
 }
 
+interface BannerProps {
+  suggestion: DiagramSuggestionResponse;
+  currentType: DiagramType;
+  onAccept?: () => void;
+  onDismiss?: () => void;
+}
 
+function TypeSuggestionBanner({ suggestion, currentType, onAccept, onDismiss }: BannerProps) {
+  const isApplied = currentType === suggestion.suggestedType;
+  const suggestedLabel = TYPE_NAMES[suggestion.suggestedType] || suggestion.suggestedType;
+
+  return (
+    <div className="type-suggestion-banner">
+      <div className="type-suggestion-content">
+        <span className="type-suggestion-badge">
+          💡 Suggestion: <strong>{suggestedLabel}</strong>
+        </span>
+        <p className="type-suggestion-reason">{suggestion.reason}</p>
+      </div>
+
+      <div className="type-suggestion-actions">
+        {!isApplied ? (
+          <button
+            type="button"
+            onClick={onAccept}
+            className="suggestion-action-btn accept"
+            title={`Switch to ${suggestion.suggestedType}`}
+          >
+            ✓ Apply
+          </button>
+        ) : (
+          <span className="suggestion-applied-badge">Applied</span>
+        )}
+        {onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="suggestion-action-btn dismiss"
+            title="Dismiss recommendation"
+            aria-label="Dismiss suggestion"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

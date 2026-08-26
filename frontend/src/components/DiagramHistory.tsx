@@ -1,72 +1,140 @@
-import { useState, useEffect } from 'react';
-import { loadHistory, clearHistory, type HistoryEntry } from '../utils/history';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  loadHistory,
+  clearHistory,
+  updateHistoryEntry,
+  deleteHistoryEntry,
+  type HistoryEntry,
+} from '../utils/history';
+import HistoryFilterBar from './HistoryFilterBar';
+import HistoryCard from './HistoryCard';
 
 interface Props {
   onRestore: (entry: HistoryEntry) => void;
-  // We can pass a trigger to refresh history from parent when a new diagram is generated
   refreshTrigger: number;
 }
 
 export default function DiagramHistory({ onRestore, refreshTrigger }: Props) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<string>('all');
 
   useEffect(() => {
     setHistory(loadHistory());
   }, [refreshTrigger]);
 
-  if (history.length === 0) return null;
-
-  const handleClear = () => {
-    if (confirm('Are you sure you want to clear your diagram history?')) {
+  const handleClearAll = () => {
+    if (confirm('Are you sure you want to clear your entire diagram history?')) {
       clearHistory();
       setHistory([]);
       setIsOpen(false);
     }
   };
 
+  const handleUpdateTitle = (id: string, title: string) => {
+    const updated = updateHistoryEntry(id, { title: title.trim() || undefined });
+    setHistory(updated);
+  };
+
+  const handleDelete = (id: string) => {
+    const updated = deleteHistoryEntry(id);
+    setHistory(updated);
+  };
+
+  const availableTypes = useMemo(() => {
+    const types = new Set<string>();
+    history.forEach((item) => {
+      if (item.diagramType) types.add(item.diagramType);
+    });
+    return Array.from(types);
+  }, [history]);
+
+  const filteredHistory = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return history.filter((entry) => {
+      if (selectedType !== 'all' && entry.diagramType !== selectedType) {
+        return false;
+      }
+      if (!query) return true;
+
+      return (
+        entry.title?.toLowerCase().includes(query) ||
+        entry.diagramType?.toLowerCase().includes(query) ||
+        entry.sourceText?.toLowerCase().includes(query) ||
+        entry.refinementInstruction?.toLowerCase().includes(query) ||
+        entry.theme?.toLowerCase().includes(query) ||
+        entry.direction?.toLowerCase().includes(query) ||
+        entry.mermaid?.toLowerCase().includes(query)
+      );
+    });
+  }, [history, searchQuery, selectedType]);
+
+  if (history.length === 0) return null;
+
   return (
-    <div className="diagram-history" style={{ marginTop: '2rem', borderTop: '1px solid var(--card-border)', paddingTop: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="diagram-history-container">
+      <div className="history-header-row">
         <button
           type="button"
           className="history-toggle-btn"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => setIsOpen((prev) => !prev)}
           aria-expanded={isOpen}
-          aria-controls="history-list"
+          aria-controls="history-content-area"
         >
-          <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-secondary)' }}>
-            {isOpen ? '▼' : '▶'} Diagram History ({history.length})
-          </h3>
+          <span className="history-toggle-arrow">{isOpen ? '▼' : '▶'}</span>
+          <span className="history-toggle-title">
+            Diagram History <span className="history-count-badge">{history.length}</span>
+          </span>
         </button>
+
         {isOpen && (
-          <button
-            onClick={(e) => { e.stopPropagation(); handleClear(); }}
-            className="secondary-btn-xs"
-            style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}
-            aria-label="Clear diagram history"
-          >
-            Clear History
-          </button>
+          <div className="history-header-actions">
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="secondary-btn-xs history-clear-btn"
+              aria-label="Clear diagram history"
+            >
+              Clear All History
+            </button>
+          </div>
         )}
       </div>
 
       {isOpen && (
-        <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {history.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => onRestore(entry)}
-              className="history-entry-btn"
-              aria-label={`Restore ${entry.diagramType} diagram created ${new Date(entry.timestamp).toLocaleString()}`}
-            >
-              <span style={{ fontWeight: 600 }}>{entry.diagramType}</span>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                {new Date(entry.timestamp).toLocaleString()}
-              </span>
-            </button>
-          ))}
+        <div id="history-content-area" className="history-content-body">
+          <HistoryFilterBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            selectedType={selectedType}
+            onTypeSelect={setSelectedType}
+            availableTypes={availableTypes}
+            totalCount={history.length}
+            filteredCount={filteredHistory.length}
+            onResetFilters={() => {
+              setSearchQuery('');
+              setSelectedType('all');
+            }}
+          />
+
+          {filteredHistory.length === 0 ? (
+            <div className="history-empty-filter">
+              <p>No diagram history matches your current filters.</p>
+            </div>
+          ) : (
+            <div className="history-list-grid">
+              {filteredHistory.map((entry) => (
+                <HistoryCard
+                  key={entry.id}
+                  entry={entry}
+                  onRestore={onRestore}
+                  onUpdateTitle={handleUpdateTitle}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

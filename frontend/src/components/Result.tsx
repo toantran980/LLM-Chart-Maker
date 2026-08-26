@@ -7,12 +7,16 @@ import { postDescribe, postFix } from '../utils/api';
 interface Props { 
   mermaid: string;
   setMermaid: (val: string) => void;
+  theme?: string;
+  setTheme?: (theme: string) => void;
 }
 
-export default function Result({ mermaid, setMermaid }: Props) {
+export default function Result({ mermaid, setMermaid, theme: propTheme, setTheme: propSetTheme }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
-  const [theme, setTheme] = useState('base');
+  const [internalTheme, setInternalTheme] = useState('base');
+  const theme = propTheme ?? internalTheme;
+  const setTheme = propSetTheme ?? setInternalTheme;
   const [showCode, setShowCode] = useState(false);
   const [description, setDescription] = useState('');
   const [loadingDesc, setLoadingDesc] = useState(false);
@@ -88,6 +92,7 @@ export default function Result({ mermaid, setMermaid }: Props) {
         downloadLink.href = pngUrl;
         downloadLink.download = `chart-${Date.now()}.png`;
         downloadLink.click();
+        document.body.removeChild(downloadLink);
       }
     };
     const encoder = new TextEncoder();
@@ -208,7 +213,7 @@ export default function Result({ mermaid, setMermaid }: Props) {
       )}
       {description && (
         <div className="diagram-description" style={{ marginTop: '1rem', padding: '1rem', background: 'var(--card-bg)', border: '1px solid var(--accent-primary)', borderRadius: '8px', color: 'var(--text-primary)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <div style={{ display: 'flex', borderBottom: 'none', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
             <h4 style={{ margin: 0, color: 'var(--accent-primary)' }}>✨ AI Description</h4>
             <button onClick={() => setDescription('')} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>&times;</button>
           </div>

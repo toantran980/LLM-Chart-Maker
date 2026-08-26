@@ -189,4 +189,30 @@ describe('API', () => {
     expect(res.status).toBe(502);
     expect(res.body).toEqual({ error: 'Provider unavailable', code: 'LLM_ERROR' });
   });
+
+  it('POST /api/suggest-type returns recommended diagram type and reason', async () => {
+    const app = createApp();
+    vi.spyOn(diagramModule, 'suggestDiagramType').mockResolvedValue({
+      suggestedType: 'timeline',
+      reason: 'Contains chronological events and dates.',
+      confidence: 0.9,
+    });
+
+    const res = await request(app)
+      .post('/api/suggest-type')
+      .send({ text: '1969 Apollo 11 Moon Landing' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.suggestedType).toBe('timeline');
+    expect(res.body.reason).toContain('chronological');
+  });
+
+  it('POST /api/suggest-type rejects missing text', async () => {
+    const app = createApp();
+    const res = await request(app).post('/api/suggest-type').send({});
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+    expect(res.body.details.text).toBeDefined();
+  });
 });
+

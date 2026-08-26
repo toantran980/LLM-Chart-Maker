@@ -2,7 +2,7 @@ import './App.css';
 import './mermaid-overrides.css';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import useSelection from './hooks/useSelection';
-import { postDiagram, postRefine } from './utils/api';
+import { postDiagram, postRefine, postSuggestType } from './utils/api';
 import { moveCaretToEnd } from './utils/dom';
 import EditorArea from './components/EditorArea';
 import Controls from './components/Controls';
@@ -13,7 +13,7 @@ import PDFViewer from './PDFViewer';
 import { saveHistoryEntry, type HistoryEntry } from './utils/history';
 import { useBackendHealth } from './hooks/useBackendHealth';
 
-import type { DiagramType } from '@shared/types';
+import type { DiagramType, DiagramSuggestionResponse } from '@shared/types';
 
 /**
  * Main application component definition
@@ -25,12 +25,15 @@ export default function App() {
   const [text, setText] = useState<string>('');
   const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
   const [direction, setDirection] = useState<string>('auto');
+  const [theme, setTheme] = useState<string>('base');
   const [mermaid, setMermaid] = useState<string>('');
   const [historyRefresh, setHistoryRefresh] = useState(0);
   const fallbackMode = useBackendHealth();
   const [loadingFull, setLoadingFull] = useState(false);
   const [loadingSelection, setLoadingSelection] = useState(false);
   const [loadingRefine, setLoadingRefine] = useState(false);
+  const [loadingSuggest, setLoadingSuggest] = useState(false);
+  const [suggestion, setSuggestion] = useState<DiagramSuggestionResponse | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [failedDiagramRequest, setFailedDiagramRequest] = useState<{ payload: { text: string; diagramType: DiagramType; direction?: string }; which: 'full' | 'selection' } | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -75,7 +78,13 @@ export default function App() {
       const data = await postDiagram({ ...payload, text: trimmedText });
       if (data?.mermaid?.trim()) {
         setMermaid(data.mermaid);
-        saveHistoryEntry({ mermaid: data.mermaid, diagramType: payload.diagramType });
+        saveHistoryEntry({
+          mermaid: data.mermaid,
+          diagramType: payload.diagramType,
+          direction: payload.direction || direction,
+          theme,
+          sourceText: trimmedText,
+        });
         setHistoryRefresh(prev => prev + 1);
       }
     } catch (err) {
@@ -85,7 +94,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [direction, theme]);
 
   const generateForSelection = useCallback(() => {
     // Check for active browser selection first (the most 'live' action)
@@ -112,6 +121,33 @@ export default function App() {
     const payload = { text: selectionToUse || highlightedText || text, diagramType, direction };
     requestDiagram(payload, 'selection');
   }, [cachedSelection, text, direction, diagramType, requestDiagram]);
+
+  const handleSuggestType = useCallback(async () => {
+    const activeSelection = window.getSelection()?.toString().trim();
+    const candidateText = activeSelection || cachedSelection || (editableRef.current ? editableRef.current.innerText : text);
+    const trimmed = candidateText.trim();
+    if (!trimmed) {
+      alert('Please enter or select some text first to suggest a diagram type.');
+      return;
+    }
+    setLoadingSuggest(true);
+    try {
+      const result = await postSuggestType(trimmed);
+      if (result?.suggestedType) {
+        setSuggestion(result);
+      }
+    } catch (err) {
+      console.error('Suggest type error:', err);
+    } finally {
+      setLoadingSuggest(false);
+    }
+  }, [cachedSelection, text]);
+
+  const handleAcceptSuggestion = () => {
+    if (suggestion) {
+      setDiagramType(suggestion.suggestedType);
+    }
+  };
 
   function handleColorPick(color: string) {
     applyHighlight(color);
@@ -147,7 +183,14 @@ export default function App() {
       const data = await postRefine({ currentDiagram: mermaid, instruction, diagramType });
       if (data?.mermaid?.trim()) {
         setMermaid(data.mermaid);
-        saveHistoryEntry({ mermaid: data.mermaid, diagramType });
+        saveHistoryEntry({
+          mermaid: data.mermaid,
+          diagramType,
+          direction,
+          theme,
+          sourceText: text,
+          refinementInstruction: instruction,
+        });
         setHistoryRefresh(prev => prev + 1);
       }
     } catch (err) {
@@ -157,6 +200,20 @@ export default function App() {
       setLoadingRefine(false);
     }
   }
+
+  const handleRestoreHistory = (entry: HistoryEntry) => {
+    setMermaid(entry.mermaid);
+    setDiagramType(entry.diagramType);
+    if (entry.direction) {
+      setDirection(entry.direction);
+    }
+    if (entry.theme) {
+      setTheme(entry.theme);
+    }
+    if (entry.sourceText !== undefined) {
+      setText(entry.sourceText);
+    }
+  };
 
   return (
     <div className="app">
@@ -212,6 +269,11 @@ export default function App() {
             loadingSelection={loadingSelection}
             hasSelectionOrHighlights={hasSelectionOrHighlights}
             onFileLoaded={handleFileLoaded}
+            onSuggestType={handleSuggestType}
+            loadingSuggest={loadingSuggest}
+            suggestion={suggestion}
+            onAcceptSuggestion={handleAcceptSuggestion}
+            onDismissSuggestion={() => setSuggestion(null)}
           />
         </section>
       )}
@@ -232,13 +294,10 @@ export default function App() {
           <button type="button" className="request-error-dismiss" onClick={() => setRequestError(null)} aria-label="Dismiss error">×</button>
         </div>
       )}
-      <Result mermaid={mermaid} setMermaid={setMermaid} />
+      <Result mermaid={mermaid} setMermaid={setMermaid} theme={theme} setTheme={setTheme} />
       <DiagramHistory
         refreshTrigger={historyRefresh}
-        onRestore={(entry: HistoryEntry) => {
-          setMermaid(entry.mermaid);
-          setDiagramType(entry.diagramType);
-        }}
+        onRestore={handleRestoreHistory}
       />
     </div>
   );

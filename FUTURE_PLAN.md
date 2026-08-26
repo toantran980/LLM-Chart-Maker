@@ -181,13 +181,13 @@ not a prerequisite for new features.
 
 ### 18. Reproducible Diagram History
 
-- [ ] Store source text, direction, theme, and refinement instruction with each history entry
-- [ ] Add a user-editable title and search/filter controls
+- [X] Store source text, direction, theme, and refinement instruction with each history entry
+- [X] Add a user-editable title and search/filter controls
 
 ### 19. Diagram Type Suggestions
 
-- [ ] Recommend a diagram type from the source text before generation
-- [ ] Let users accept or override the recommendation
+- [X] Recommend a diagram type from the source text before generation
+- [X] Let users accept or override the recommendation
 
 ### 20. Production Launch Safeguards
 

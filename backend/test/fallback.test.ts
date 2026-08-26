@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { fallbackDiagram } from '../src/fallback';
+import { fallbackDiagram, fallbackSuggestDiagramType } from '../src/fallback';
+
 
 describe('fallbackDiagram', () => {
   it('builds a flowchart with edges from sequential lines', () => {
@@ -71,3 +72,42 @@ describe('fallbackDiagram', () => {
     expect(result).not.toMatch(/Say "hello"/);
   });
 });
+
+describe('fallbackSuggestDiagramType', () => {
+  it('suggests gantt for schedule and sprint tasks', () => {
+    const res = fallbackSuggestDiagramType('Sprint 1 schedule: Task 1 from start to finish over 2 weeks in Q1 phase');
+    expect(res.suggestedType).toBe('gantt');
+    expect(res.reason).toBeDefined();
+  });
+
+  it('suggests timeline for historical milestones', () => {
+    const res = fallbackSuggestDiagramType('1990: Invention of Web\n2000: Dot com era\n2020: AI era timeline');
+    expect(res.suggestedType).toBe('timeline');
+  });
+
+  it('suggests er for database tables and relations', () => {
+    const res = fallbackSuggestDiagramType('Database schema with User table, Order entity, primary key id, and one-to-many relation');
+    expect(res.suggestedType).toBe('er');
+  });
+
+  it('suggests gitgraph for branching and merge workflows', () => {
+    const res = fallbackSuggestDiagramType('Git branch develop, commit fix, merge into main');
+    expect(res.suggestedType).toBe('gitgraph');
+  });
+
+  it('suggests rules for conditional statements', () => {
+    const res = fallbackSuggestDiagramType('if user has permission, then show dashboard, else redirect to login');
+    expect(res.suggestedType).toBe('rules');
+  });
+
+  it('suggests mindmap for brainstorming and central themes', () => {
+    const res = fallbackSuggestDiagramType('Mindmap brainstorming on product ideas with central concept and subtopics');
+    expect(res.suggestedType).toBe('mindmap');
+  });
+
+  it('defaults to flowchart for generic steps', () => {
+    const res = fallbackSuggestDiagramType('Step 1: Open app\nStep 2: Click button\nStep 3: Done');
+    expect(res.suggestedType).toBe('flowchart');
+  });
+});
+

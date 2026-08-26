@@ -39,3 +39,8 @@ export function postFix(payload: { mermaid: string; error: string }) {
 export function postDescribe(mermaid: string) {
   return postJson('/api/describe', { mermaid });
 }
+
+export function postSuggestType(text: string): Promise<import('@shared/types').DiagramSuggestionResponse> {
+  return postJson('/api/suggest-type', { text });
+}
+

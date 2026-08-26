@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { generateDiagram, refineDiagram, fixMermaid } from './diagram';
+import { generateDiagram, refineDiagram, fixMermaid, suggestDiagramType } from './diagram';
 import { describeDiagram } from './llm';
 import type { DiagramRequest } from '../../shared/types';
 import { asyncHandler, errorHandler } from './middleware/errorHandler';
@@ -10,6 +10,7 @@ import {
   validateDiagramRequest,
   validateFixRequest,
   validateRefineRequest,
+  validateSuggestRequest,
 } from './middleware/validate';
 
 export function createApp() {
@@ -90,6 +91,17 @@ export function createApp() {
       const { mermaid } = req.body;
       const description = await describeDiagram(mermaid);
       res.json({ description });
+    }),
+  );
+
+  app.post(
+    '/api/suggest-type',
+    llmRateLimit,
+    validateSuggestRequest,
+    asyncHandler(async (req, res) => {
+      const { text } = req.body;
+      const suggestion = await suggestDiagramType(text);
+      res.json(suggestion);
     }),
   );
 

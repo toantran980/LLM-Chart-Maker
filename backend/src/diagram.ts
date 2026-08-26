@@ -1,6 +1,6 @@
-import { generateDiagramWithLLM, refineDiagramWithLLM, fixMermaidWithLLM } from './llm';
-import { fallbackDiagram } from './fallback';
-import type { DiagramRequest, DiagramType } from '../../shared/types';
+import { generateDiagramWithLLM, refineDiagramWithLLM, fixMermaidWithLLM, suggestDiagramTypeWithLLM } from './llm';
+import { fallbackDiagram, fallbackSuggestDiagramType } from './fallback';
+import type { DiagramRequest, DiagramType, DiagramSuggestionResponse } from '../../shared/types';
 
 export async function generateDiagram(req: DiagramRequest): Promise<string> {
   try {
@@ -28,5 +28,18 @@ export async function fixMermaid(req: { mermaid: string; error: string }): Promi
   return fixMermaidWithLLM(req);
 }
 
+export async function suggestDiagramType(text: string): Promise<DiagramSuggestionResponse> {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return fallbackSuggestDiagramType(text);
+    }
+    return await suggestDiagramTypeWithLLM(text);
+  } catch (err: any) {
+    console.warn('[AI] suggestDiagramType error, using fallback:', err.message);
+    return fallbackSuggestDiagramType(text);
+  }
+}
+
 export { generateDiagramWithLLM } from './llm';
 export { fallbackDiagram } from './fallback';
+

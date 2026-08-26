@@ -92,3 +92,69 @@ export function fallbackDiagram(req: DiagramRequest & { direction?: string }): s
 
   return `\`\`\`mermaid\n${styleDirectives}flowchart ${dir}\n${nodes.join('\n')}\n${links.join('\n')}\n\`\`\``;
 }
+
+export function fallbackSuggestDiagramType(text: string): { suggestedType: import('../../shared/types').DiagramType; reason: string; confidence?: number } {
+  const lower = text.toLowerCase();
+
+  // Gantt chart: project schedules, tasks, duration, sprints, milestones
+  if (/(gantt|sprint|milestone|deadline|duration|\bweeks?\b|\bdays?\b|schedule|task\s*\d)/i.test(lower) && /(start|end|finish|phase|quarter)/i.test(lower)) {
+    return {
+      suggestedType: 'gantt',
+      reason: 'Detected project schedule, sprint phases, or task timeline terminology.',
+      confidence: 0.85,
+    };
+  }
+
+  // Timeline: chronological dates, history, years, historical milestones
+  if (/(timeline|chronolog|century|history|evolution|\b\d{4}\b\s*[:\-–]|\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]* \d{4}\b)/i.test(lower)) {
+    return {
+      suggestedType: 'timeline',
+      reason: 'Detected chronological dates, milestones, or historical sequence.',
+      confidence: 0.85,
+    };
+  }
+
+  // ER Diagram: database entities, relations, primary/foreign keys, attributes
+  if (/(entity|table|foreign key|primary key|one-to-many|many-to-many|database schema|relational|attributes?)/i.test(lower) || /([a-z0-9_]+\s*\|\-\-o\{|[a-z0-9_]+\s*\}\|)/i.test(lower)) {
+    return {
+      suggestedType: 'er',
+      reason: 'Detected database entities, relations, or schema attributes.',
+      confidence: 0.9,
+    };
+  }
+
+  // Git Graph: git branch, commit, merge, checkout, rebase, tag
+  if (/(git\s*graph|git\s*branch|commit\s*id|pull request|rebase|cherry-pick|fast-forward)/i.test(lower) || (/\b(commit|branch|merge|checkout)\b/i.test(lower) && /\b(main|master|feature|develop|hotfix)\b/i.test(lower))) {
+    return {
+      suggestedType: 'gitgraph',
+      reason: 'Detected Git repository branching, commits, or merge workflows.',
+      confidence: 0.9,
+    };
+  }
+
+  // Rules / Decision: if/then/else, policies, business rules
+  if (/(if\s+.+?,\s*(then|else)|rule\s*\d|business rule|eligibility criteria|conditional logic)/i.test(lower) || (lower.includes('if ') && lower.includes(' then '))) {
+    return {
+      suggestedType: 'rules',
+      reason: 'Detected conditional logic, decision criteria, or business rules.',
+      confidence: 0.85,
+    };
+  }
+
+  // Mindmap: brainstorm, concepts, core topic, subtopics, hierarchical ideas
+  if (/(mindmap|brainstorm|central concept|core theme|subtopic|sub-categories|idea tree)/i.test(lower)) {
+    return {
+      suggestedType: 'mindmap',
+      reason: 'Detected conceptual brainstorming, subtopics, or idea breakdown.',
+      confidence: 0.8,
+    };
+  }
+
+  // Default: Flowchart
+  return {
+    suggestedType: 'flowchart',
+    reason: 'Detected a sequential process, steps, or structured workflow.',
+    confidence: 0.75,
+  };
+}
+

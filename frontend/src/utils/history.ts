@@ -2,17 +2,34 @@ import type { DiagramType } from '@shared/types';
 
 export interface HistoryEntry {
   id: string;
+  title?: string;
   mermaid: string;
   diagramType: DiagramType;
+  direction?: string;
+  theme?: string;
+  sourceText?: string;
+  refinementInstruction?: string;
   timestamp: number;
 }
 
 const HISTORY_KEY = 'chart-history';
 const MAX_HISTORY = 20;
 
+function getStorage(): Storage | null {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    return window.localStorage;
+  }
+  if (typeof localStorage !== 'undefined') {
+    return localStorage;
+  }
+  return null;
+}
+
 export function loadHistory(): HistoryEntry[] {
   try {
-    const data = localStorage.getItem(HISTORY_KEY);
+    const storage = getStorage();
+    if (!storage) return [];
+    const data = storage.getItem(HISTORY_KEY);
     return data ? JSON.parse(data) : [];
   } catch (err) {
     console.error('Failed to load history', err);
@@ -20,26 +37,68 @@ export function loadHistory(): HistoryEntry[] {
   }
 }
 
-export function saveHistoryEntry(entry: Omit<HistoryEntry, 'id' | 'timestamp'>): HistoryEntry[] {
+export function saveHistoryEntry(
+  entry: Omit<HistoryEntry, 'id' | 'timestamp'> & { id?: string; timestamp?: number }
+): HistoryEntry[] {
   const current = loadHistory();
   const newEntry: HistoryEntry = {
-    ...entry, // (spread operator) created new object to avoid modified properties of the original entry
-    id: Math.random().toString(36).substring(2, 9),
-    timestamp: Date.now(),
+    ...entry,
+    id: entry.id || Math.random().toString(36).substring(2, 9),
+    timestamp: entry.timestamp || Date.now(),
   };
-  
-  const updated = [newEntry, ...current].slice(0, MAX_HISTORY);
+
+  const updated = [newEntry, ...current.filter((item) => item.id !== newEntry.id)].slice(0, MAX_HISTORY);
   try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+    const storage = getStorage();
+    if (storage) {
+      storage.setItem(HISTORY_KEY, JSON.stringify(updated));
+    }
   } catch (err) {
     console.error('Failed to save history', err);
   }
   return updated;
 }
 
+export function updateHistoryEntry(id: string, updates: Partial<HistoryEntry>): HistoryEntry[] {
+  const current = loadHistory();
+  const updated = current.map((entry) => {
+    if (entry.id === id) {
+      return { ...entry, ...updates };
+    }
+    return entry;
+  });
+
+  try {
+    const storage = getStorage();
+    if (storage) {
+      storage.setItem(HISTORY_KEY, JSON.stringify(updated));
+    }
+  } catch (err) {
+    console.error('Failed to update history entry', err);
+  }
+  return updated;
+}
+
+export function deleteHistoryEntry(id: string): HistoryEntry[] {
+  const current = loadHistory();
+  const updated = current.filter((entry) => entry.id !== id);
+  try {
+    const storage = getStorage();
+    if (storage) {
+      storage.setItem(HISTORY_KEY, JSON.stringify(updated));
+    }
+  } catch (err) {
+    console.error('Failed to delete history entry', err);
+  }
+  return updated;
+}
+
 export function clearHistory(): void {
   try {
-    localStorage.removeItem(HISTORY_KEY);
+    const storage = getStorage();
+    if (storage) {
+      storage.removeItem(HISTORY_KEY);
+    }
   } catch (err) {
     console.error('Failed to clear history', err);
   }

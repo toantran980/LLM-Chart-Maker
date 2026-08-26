@@ -136,3 +136,18 @@ export const validateDescribeRequest: RequestHandler = (req, _res, next) => {
     next(err);
   }
 };
+
+export const validateSuggestRequest: RequestHandler = (req, _res, next) => {
+  try {
+    const body = req.body as Record<string, unknown>;
+    const details: Record<string, string> = {};
+
+    requireString(body, 'text', MAX_TEXT_LENGTH, details);
+
+    throwIfInvalid(details);
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
+

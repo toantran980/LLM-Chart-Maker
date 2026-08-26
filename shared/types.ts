@@ -6,3 +6,10 @@ export interface DiagramRequest {
   instruction?: string;
   direction?: string;
 }
+
+export interface DiagramSuggestionResponse {
+  suggestedType: DiagramType;
+  reason: string;
+  confidence?: number;
+}
+
