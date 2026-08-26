@@ -1,16 +1,10 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { DiagramType } from '@shared/types';
 
-import * as pdfjsLib from 'pdfjs-dist';
 import PDFWorker from 'pdfjs-dist/build/pdf.worker.mjs?worker';
 import 'pdfjs-dist/web/pdf_viewer.css';
 
 import {
-  loadPDFFromFile,
-  extractHighlightsFromPDF,
-  extractFullTextFromPDF,
-  renderPageToCanvas,
-  renderTextLayer,
   getSelectedTextFromLayer,
   clearAllHighlightOverlays,
   isValidSelection,
@@ -18,18 +12,16 @@ import {
 } from './utils/pdfUtils';
 
 import {
-  PDF_SCALE,
-  PDF_RENDER_THRESHOLD,
-  PDF_OBSERVE_DELAY,
   MIN_SELECTION_LENGTH,
   MIN_CONSOLE_LOG_LENGTH,
-  PDF_RENDERING_ERROR,
   EMPTY_SELECTION_ERROR,
   LOADING_ERROR,
   TRUNCATION_WARNING,
 } from './utils/pdfConstants';
 
-// Initialize PDF.js worker
+import { usePDFDocument } from './hooks/usePDFDocument';
+
+import * as pdfjsLib from 'pdfjs-dist';
 pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
 
 interface PDFViewerProps {
@@ -45,40 +37,40 @@ export default function PDFViewer({
   requestDiagram,
   diagramType
 }: PDFViewerProps) {
-  const [highlights, setHighlights] = useState<Highlight[]>([]);
-  const [loading, setLoading] = useState(false);
   const [manualHighlights, setManualHighlights] = useState<Highlight[]>([]);
-  const [numPages, setNumPages] = useState<number>(0);
-  const [fullPdfText, setFullPdfText] = useState<string>('');
-  const [isPdfTruncated, setIsPdfTruncated] = useState(false);
-  
-  const canvasRefs = useRef<Array<HTMLCanvasElement | null>>([]);
-  const textLayerRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const viewerRef = useRef<HTMLDivElement>(null);
 
-  // Handle selection events
+  const {
+    numPages,
+    loading,
+    highlights,
+    fullPdfText,
+    isPdfTruncated,
+    canvasRefs,
+    textLayerRefs,
+    viewerRef,
+  } = usePDFDocument(file);
+
   const handleSelection = useCallback((pageIndex: number) => {
     const selection = window.getSelection();
     const textLayer = textLayerRefs.current[pageIndex];
-    
+
     if (!selection || !textLayer) return;
-    
+
     const selectedText = getSelectedTextFromLayer(textLayer, selection);
-    
+
     if (isValidSelection(selectedText, MIN_SELECTION_LENGTH)) {
-      setManualHighlights(prev => [...prev, { 
-        text: selectedText, 
-        color: 'var(--accent-primary)' 
+      setManualHighlights(prev => [...prev, {
+        text: selectedText,
+        color: 'var(--accent-primary)'
       }]);
     }
-  }, []);
+  }, [textLayerRefs]);
 
-  // Handle diagram generation from selection
   const handleGenerateFromSelection = useCallback(() => {
     const allText = [...highlights, ...manualHighlights]
       .map(h => h.text)
       .join('\n\n---\n\n');
-    
+
     if (allText) {
       requestDiagram({ text: allText, diagramType }, 'selection');
     } else {
@@ -86,7 +78,6 @@ export default function PDFViewer({
     }
   }, [highlights, manualHighlights, diagramType, requestDiagram]);
 
-  // Handle diagram generation from full PDF
   const handleGenerateFromFull = useCallback(() => {
     if (fullPdfText) {
       requestDiagram({ text: fullPdfText, diagramType }, 'full');
@@ -95,17 +86,13 @@ export default function PDFViewer({
     }
   }, [fullPdfText, diagramType, requestDiagram]);
 
-  // Clear all highlights
   const handleClearAll = useCallback(() => {
     setManualHighlights([]);
-    setHighlights([]);
     clearAllHighlightOverlays(viewerRef.current);
-  }, []);
+  }, [viewerRef]);
 
-  // Remove specific highlight
   const handleRemoveHighlight = useCallback((textToRemove: string) => {
     setManualHighlights(prev => prev.filter(h => h.text !== textToRemove));
-    setHighlights(prev => prev.filter(h => h.text !== textToRemove));
   }, []);
 
   // Global selection listener for debugging
@@ -117,104 +104,10 @@ export default function PDFViewer({
         console.log("Captured selection for analysis:", text);
       }
     };
-    
+
     document.addEventListener('mouseup', handleMouseUp);
     return () => document.removeEventListener('mouseup', handleMouseUp);
   }, []);
-
-  // Main PDF loading and processing effect
-  useEffect(() => {
-    if (!file) return;
-    
-    let cancelled = false;
-    let loadingTask: ReturnType<typeof pdfjsLib.getDocument> | undefined;
-    let observer: IntersectionObserver | undefined;
-    let observeTimeout: ReturnType<typeof setTimeout> | undefined;
-
-    const processPDF = async () => {
-      try {
-        const pdf = await loadPDFFromFile(file);
-        
-        if (cancelled) {
-          loadingTask?.destroy();
-          return;
-        }
-        
-        setNumPages(pdf.numPages);
-        setLoading(true);
-        setHighlights([]);
-        setManualHighlights([]);
-
-        // Extract highlights from PDF annotations
-        const pdfHighlights = await extractHighlightsFromPDF(pdf);
-        setHighlights(pdfHighlights);
-
-        // Extract full text for "Diagram Entire PDF" feature
-        const { text: extractedText, isTruncated: truncated } = await extractFullTextFromPDF(pdf);
-        setFullPdfText(extractedText);
-        setIsPdfTruncated(truncated);
-
-        setLoading(false);
-
-        // Set up intersection observer for lazy rendering
-        setupIntersectionObserver(pdf);
-        
-      } catch (error) {
-        if (!cancelled) {
-          setLoading(false);
-          console.error(PDF_RENDERING_ERROR, error);
-        }
-      }
-    };
-
-    const setupIntersectionObserver = (pdf: pdfjsLib.PDFDocumentProxy) => {
-      observer = new IntersectionObserver(async (entries) => {
-        for (const entry of entries) {
-          if (!cancelled && entry.isIntersecting) {
-            const pageNum = parseInt(entry.target.getAttribute('data-page') || '0');
-            if (pageNum > 0) {
-              await renderPage(pdf, pageNum);
-            }
-          }
-        }
-      }, { threshold: PDF_RENDER_THRESHOLD });
-
-      // Observe all page containers after a short delay
-      observeTimeout = setTimeout(() => {
-        viewerRef.current?.querySelectorAll('.pdf-page-container')
-          .forEach(el => observer?.observe(el));
-      }, PDF_OBSERVE_DELAY);
-    };
-
-    const renderPage = async (pdf: pdfjsLib.PDFDocumentProxy, pageNum: number) => {
-      const page = await pdf.getPage(pageNum);
-      const canvas = canvasRefs.current[pageNum - 1];
-      
-      if (!canvas || canvas.getAttribute('data-rendered')) return;
-      
-      const viewport = await renderPageToCanvas(page, canvas, PDF_SCALE);
-      
-      const textLayerDiv = textLayerRefs.current[pageNum - 1];
-      if (textLayerDiv) {
-        await renderTextLayer(page, textLayerDiv, viewport);
-      }
-    };
-
-    processPDF();
-
-    return () => {
-      cancelled = true;
-      if (observeTimeout) clearTimeout(observeTimeout);
-      observer?.disconnect();
-      loadingTask?.destroy();
-    };
-  }, [file]);
-
-  // Update refs arrays when numPages changes
-  useEffect(() => {
-    canvasRefs.current = Array(numPages).fill(null);
-    textLayerRefs.current = Array(numPages).fill(null);
-  }, [numPages]);
 
   if (!file) return null;
 
@@ -225,7 +118,7 @@ export default function PDFViewer({
       <button className="close-pdf-btn" onClick={onClose}>
         &times; Close PDF and return to Editor
       </button>
-      
+
       <div className="pdf-preview-pane custom-scroll">
         {numPages === 0 && (
           <div className="pdf-loading-state">
@@ -234,7 +127,7 @@ export default function PDFViewer({
             <p>Initializing PDF engine and loading pages.</p>
           </div>
         )}
-        
+
         <div className="pdf-pages-container">
           {Array.from({ length: numPages }).map((_, i) => (
             <div
@@ -314,7 +207,7 @@ export default function PDFViewer({
               <span>Highlight any text on the left to start!</span>
             </div>
           )}
-          
+
           {allHighlights.reverse().map((hl, i) => (
             <div key={i} className="highlight-card-premium">
               <div className="highlight-accent" style={{ background: hl.color || 'var(--accent-primary)' }} />

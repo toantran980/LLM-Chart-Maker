@@ -152,10 +152,10 @@ The visual app should feel polished and usable on smaller screens and for keyboa
 browser-specific, imperative logic in the frontend. This is maintenance work,
 not a prerequisite for new features.
 
-- [ ] Extract PDF loading, text extraction, and page rendering from `PDFViewer.tsx` into focused hooks/utilities
-- [ ] Extract contentEditable range, highlight wrapping, and caret-restoration helpers from `useSelection.ts`
-- [ ] Add component-level tests for PDF lifecycle cleanup and text-highlight edge cases
-- [ ] Keep behavior unchanged; undertake this when adding PDF/highlight features or fixing a related bug
+- [X] Extract PDF loading, text extraction, and page rendering from `PDFViewer.tsx` into focused hooks/utilities
+- [X] Extract contentEditable range, highlight wrapping, and caret-restoration helpers from `useSelection.ts`
+- [X] Add component-level tests for PDF lifecycle cleanup and text-highlight edge cases
+- [X] Keep behavior unchanged; undertake this when adding PDF/highlight features or fixing a related bug
 
 ---
 
