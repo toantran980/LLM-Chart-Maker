@@ -134,7 +134,8 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: st
       padding: 24,
       nodeSpacing: 70,
       rankSpacing: 70,
-      diagramPadding: 24
+      diagramPadding: 24,
+      wrappingWidth: 200
     }
   });
 
