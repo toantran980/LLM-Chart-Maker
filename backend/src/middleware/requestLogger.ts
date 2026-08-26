@@ -6,7 +6,7 @@ export const requestLogger: RequestHandler = (req, res, next) => {
 
   res.on('finish', () => {
     log('info', 'request completed', {
-      requestId: req.id,
+      requestId: (req as any).id,
       method: req.method,
       path: req.path,
       status: res.statusCode,

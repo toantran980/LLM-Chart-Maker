@@ -21,14 +21,6 @@ function isMermaidTheme(value: string): value is MermaidTheme {
 
 /* ---------- Safe DOM helpers (no innerHTML with user content) ---------- */
 
-/** Strip any characters that could open an HTML tag or dangerous directive. */
-function sanitiseMermaidInput(raw: string): string {
-  return raw
-    .replace(/</g, '')
-    .replace(/click\s+/gi, '')
-    .replace(/javascript:/gi, '');
-}
-
 /** Clear a container and insert a single text message element. */
 function clearAndSetMessage(container: HTMLElement, text: string, className: string) {
   container.textContent = '';
@@ -117,7 +109,7 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: st
   const resolvedTheme: MermaidTheme = isMermaidTheme(theme) ? theme : 'base';
   mermaid.initialize({
     startOnLoad: false,
-    securityLevel: 'loose',
+    securityLevel: 'strict',
     theme: resolvedTheme,
     themeVariables: {
       primaryColor: '#6366f1',
@@ -136,24 +128,21 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: st
       nodeRadius: '12'
     },
     flowchart: {
-      useMaxWidth: true,
+      useMaxWidth: false,
       htmlLabels: true,
       curve: 'basis',
       padding: 24,
       nodeSpacing: 70,
       rankSpacing: 70,
       diagramPadding: 24,
-      wrappingWidth: 500
+      wrappingWidth: 800
     }
   });
 
   const uid = 'm' + Math.random().toString(36).substring(2, 10);
 
   try {
-    // Sanitise input: strip <, click directives, and javascript: URIs.
-    // Then render with securityLevel: 'loose' so HTML labels can wrap properly.
-    const safe = sanitiseMermaidInput(def);
-    const { svg } = await mermaid.render(uid, safe);
+    const { svg } = await mermaid.render(uid, def);
     containerEl.innerHTML = svg;
 
   } catch (err) {
