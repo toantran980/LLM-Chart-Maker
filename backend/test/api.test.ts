@@ -11,6 +11,9 @@ describe('API', () => {
   beforeEach(() => {
     resetRateLimitStore();
     process.env.RATE_LIMIT_MAX = '100';
+    delete process.env.API_SECRET;
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
   });
 
   afterEach(() => {
@@ -18,6 +21,9 @@ describe('API', () => {
     resetRateLimitStore();
     delete process.env.RATE_LIMIT_MAX;
     delete process.env.RATE_LIMIT_WINDOW_MS;
+    delete process.env.API_SECRET;
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
   });
 
   it('GET /health returns ok and fallback flag', async () => {
@@ -28,7 +34,10 @@ describe('API', () => {
     const res = await request(app).get('/health');
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true, fallback: true });
+    expect(res.body.ok).toBe(true);
+    expect(res.body.fallback).toBe(true);
+    expect(typeof res.body.uptime).toBe('number');
+    expect(res.body.memory).toBeDefined();
 
     if (originalKey) process.env.OPENAI_API_KEY = originalKey;
   });
@@ -142,7 +151,9 @@ describe('API', () => {
       });
 
     expect(res.status).toBe(504);
-    expect(res.body).toEqual({ error: 'LLM request timed out', code: 'LLM_TIMEOUT' });
+    expect(res.body.error).toBe('LLM request timed out');
+    expect(res.body.code).toBe('LLM_TIMEOUT');
+    expect(typeof res.body.requestId).toBe('string');
   });
 
   it('enforces per-IP rate limits on LLM routes', async () => {
@@ -187,7 +198,9 @@ describe('API', () => {
       .send({ mermaid: 'flowchart TD\nA --> B' });
 
     expect(res.status).toBe(502);
-    expect(res.body).toEqual({ error: 'Provider unavailable', code: 'LLM_ERROR' });
+    expect(res.body.error).toBe('Provider unavailable');
+    expect(res.body.code).toBe('LLM_ERROR');
+    expect(typeof res.body.requestId).toBe('string');
   });
 
   it('POST /api/suggest-type returns recommended diagram type and reason', async () => {
@@ -213,6 +226,32 @@ describe('API', () => {
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('VALIDATION_ERROR');
     expect(res.body.details.text).toBeDefined();
+  });
+
+  it('POST /api/diagram rejects requests without API secret when configured', async () => {
+    process.env.API_SECRET = 'test-secret';
+    const app = createApp();
+
+    const res = await request(app)
+      .post('/api/diagram')
+      .send({ text: 'A\nB', diagramType: 'flowchart' });
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe('UNAUTHORIZED');
+  });
+
+  it('POST /api/diagram accepts valid API secret', async () => {
+    process.env.API_SECRET = 'test-secret';
+    const app = createApp();
+    vi.spyOn(diagramModule, 'generateDiagram').mockResolvedValue('```mermaid\nflowchart TD\nA --> B\n```');
+
+    const res = await request(app)
+      .post('/api/diagram')
+      .set('X-API-Key', 'test-secret')
+      .send({ text: 'A\nB', diagramType: 'flowchart' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.mermaid).toContain('flowchart TD');
   });
 });
 

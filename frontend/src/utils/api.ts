@@ -6,11 +6,18 @@ export function getApiBase(): string {
 
 export type DiagramPayload = { text: string; diagramType: DiagramType; direction?: string; instruction?: string };
 
+function getApiHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const apiSecret = import.meta.env.VITE_API_SECRET;
+  if (apiSecret) headers['X-API-Key'] = apiSecret;
+  return headers;
+}
+
 async function postJson(path: string, body: unknown) {
   const base = getApiBase();
   const res = await fetch(`${base}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getApiHeaders(),
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));

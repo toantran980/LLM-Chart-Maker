@@ -98,6 +98,21 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 `OPENAI_API_KEY` enables LLM generation, refinement, syntax repairs, and descriptions. Without it, initial diagram generation and descriptions use local fallbacks; refinement and syntax repair require a key.
 
+### Production safeguards (optional)
+
+| Variable | Where | Purpose |
+| -------- | ----- | ------- |
+| `API_SECRET` | Backend (Render) | Require `X-API-Key` on all `/api/*` routes |
+| `VITE_API_SECRET` | Frontend (Vercel) | Same value as `API_SECRET`; sent with API requests |
+| `ALLOWED_ORIGIN` | Backend | Production frontend URL for CORS |
+| `UPSTASH_REDIS_REST_URL` | Backend | Shared rate-limit store (falls back to in-memory if unset) |
+| `UPSTASH_REDIS_REST_TOKEN` | Backend | Upstash REST token |
+| `SENTRY_DSN` | Backend | Error tracking and alerts |
+| `RATE_LIMIT_MAX` | Backend | Max LLM requests per window (default: 20) |
+| `RATE_LIMIT_WINDOW_MS` | Backend | Rate-limit window in ms (default: 60000) |
+
+When `API_SECRET` is unset, LLM routes stay open for local development. Set the same secret on both Render and Vercel before exposing the live app broadly.
+
 ```bash
 npm run dev
 ```
@@ -141,7 +156,7 @@ Visit `http://localhost` in your browser. Provide `OPENAI_API_KEY` in the root `
 | `POST /api/fix`      | Attempts to repair Mermaid code after a render error.             |
 | `POST /api/describe` | Returns a plain-language description of Mermaid code.             |
 
-LLM routes validate request bodies and enforce size limits. Default rate limit: 20 requests per IP per minute. Configure `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS` for a different policy.
+LLM routes validate request bodies and enforce size limits. Default rate limit: 20 requests per IP or API key per minute. Configure `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS` for a different policy. Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` for shared rate limiting across instances.
 
 ---
 

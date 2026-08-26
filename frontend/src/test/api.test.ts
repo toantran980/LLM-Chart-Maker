@@ -41,6 +41,24 @@ describe('postDiagram', () => {
     });
     expect(result.mermaid).toContain('flowchart TD');
   });
+
+  it('sends X-API-Key when VITE_API_SECRET is configured', async () => {
+    vi.stubEnv('VITE_API_BASE', 'https://api.example.com');
+    vi.stubEnv('VITE_API_SECRET', 'client-secret');
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ mermaid: '```mermaid\nflowchart TD\n```' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await postDiagram({ text: 'A\nB', diagramType: 'flowchart' });
+
+    expect(fetchMock).toHaveBeenCalledWith('https://api.example.com/api/diagram', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': 'client-secret' },
+      body: JSON.stringify({ text: 'A\nB', diagramType: 'flowchart' }),
+    });
+  });
 });
 
 describe('postRefine', () => {

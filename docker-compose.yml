@@ -8,6 +8,10 @@ services:
     environment:
       - PORT=4000
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - API_SECRET=${API_SECRET:-}
+      - UPSTASH_REDIS_REST_URL=${UPSTASH_REDIS_REST_URL:-}
+      - UPSTASH_REDIS_REST_TOKEN=${UPSTASH_REDIS_REST_TOKEN:-}
+      - SENTRY_DSN=${SENTRY_DSN:-}
     restart: unless-stopped
 
   frontend:

@@ -2,6 +2,7 @@ import type { Response } from 'express';
 
 export type ErrorCode =
   | 'VALIDATION_ERROR'
+  | 'UNAUTHORIZED'
   | 'RATE_LIMIT_EXCEEDED'
   | 'LLM_TIMEOUT'
   | 'LLM_ERROR'

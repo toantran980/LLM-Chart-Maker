@@ -2,6 +2,7 @@ import axios from 'axios';
 import type { DiagramRequest, DiagramType } from '../../shared/types';
 import { ApiError } from './errors';
 import { DEFAULT_LLM_TIMEOUT_MS } from './limits';
+import { log } from './logger';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
@@ -39,14 +40,14 @@ async function requestLLM(messages: LLMMessage[], maxCompletionTokens = 1000): P
     return content.trim();
   } catch (err) {
     if (err instanceof ApiError) throw err;
-    
+
     // Check for axios error structure without relying on axios.isAxiosError
     const error = err as any;
-    const isAxiosError = error && 
-      (error.config !== undefined || 
-       error.response !== undefined || 
+    const isAxiosError = error &&
+      (error.config !== undefined ||
+       error.response !== undefined ||
        error.request !== undefined);
-    
+
     if (isAxiosError) {
       if (error.code === 'ECONNABORTED') {
         throw new ApiError('LLM request timed out', 504, 'LLM_TIMEOUT');
@@ -147,7 +148,7 @@ export async function fixMermaidWithLLM(req: { mermaid: string; error: string })
 
 export async function describeDiagram(mermaid: string): Promise<string> {
   if (!OPENAI_API_KEY) {
-    console.warn('[AI] No OPENAI_API_KEY found. Returning fallback description.');
+    log('warn', 'No OPENAI_API_KEY found. Returning fallback description.');
     return "This is a fallback description. Please set your OPENAI_API_KEY in the backend .env file to enable AI-powered diagram descriptions.\n\nThe diagram contains the following raw code:\n" + mermaid;
   }
 
@@ -194,7 +195,7 @@ ${text}
       };
     }
   } catch (err) {
-    console.warn('[AI] Failed to parse suggestDiagramType JSON:', err);
+    log('warn', 'Failed to parse suggestDiagramType JSON', { error: err instanceof Error ? err.message : String(err) });
   }
 
   return {
@@ -203,4 +204,3 @@ ${text}
     confidence: 0.8,
   };
 }
-

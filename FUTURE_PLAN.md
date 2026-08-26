@@ -191,12 +191,10 @@ not a prerequisite for new features.
 
 ### 20. Production Launch Safeguards
 
-- [ ] Add authentication or another access-control layer before exposing LLM endpoints broadly
-- [ ] Move rate limiting from in-memory storage to a shared service (for example, Upstash Redis or a hosting/WAF provider)
-- [ ] Set per-user/IP request quotas to limit OpenAI API-cost abuse
-- [ ] Add error tracking, structured logs, and alerts for backend failures and unusual usage
-- [ ] Confirm production secrets and `ALLOWED_ORIGIN` are configured only in the hosting environment
-- [ ] Add CI to run build, tests, lint, and dependency/security checks on every pull request
+- [X] Add lightweight access control (API key or auth) on LLM routes
+- [X] Upgrade rate limiting to a shared store (Redis or edge/WAF) with per-IP/identity quotas
+- [X] Add observability: structured logs, error tracking, and alerts for backend failures
+- [X] Extend existing CI with dependency/security checks
 
 ---
 
