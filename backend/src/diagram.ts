@@ -39,7 +39,3 @@ export async function suggestDiagramType(text: string): Promise<DiagramSuggestio
     return fallbackSuggestDiagramType(text);
   }
 }
-
-export { generateDiagramWithLLM } from './llm';
-export { fallbackDiagram } from './fallback';
-

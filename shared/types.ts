@@ -12,4 +12,3 @@ export interface DiagramSuggestionResponse {
   reason: string;
   confidence?: number;
 }
-

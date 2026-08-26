@@ -57,16 +57,6 @@ async function requestLLM(messages: LLMMessage[], maxCompletionTokens = 1000): P
       throw new ApiError(message, status, 'LLM_ERROR');
     }
 
-    // if (axios.isAxiosError(err)) {
-    //   const axiosError = err;
-    //   if (axiosError.code === 'ECONNABORTED') {
-    //     throw new ApiError('LLM request timed out', 504, 'LLM_TIMEOUT');
-    //   }
-    //   const providerMessage = axiosError.response?.data?.error?.message;
-    //   const message = typeof providerMessage === 'string' ? providerMessage : axiosError.message;
-    //   const status = axiosError.response?.status && axiosError.response.status >= 400 ? axiosError.response.status : 502;
-    //   throw new ApiError(message, status, 'LLM_ERROR');
-    // }
     throw err;
   }
 }
@@ -77,8 +67,6 @@ function buildPrompt(req: DiagramRequest & { direction?: string }) {
 
   // Direction instruction block: either tell LLM to choose, or force the user's pick
   const noDirectionTypes = ['timeline', 'gantt', 'er', 'mindmap', 'gitgraph'];
-  // 
-  
   const directionRule = noDirectionTypes.includes(diagramType)
   ? `- No directional layout applies. Use the correct Mermaid keyword for "${diagramType}" (e.g. "gantt", "erDiagram", "mindmap", "gitGraph") and omit any direction.`
   : isAuto

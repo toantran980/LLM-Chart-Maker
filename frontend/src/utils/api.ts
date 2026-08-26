@@ -1,4 +1,4 @@
-import type { DiagramType } from '@shared/types';
+import type { DiagramType, DiagramSuggestionResponse } from '@shared/types';
 
 export function getApiBase(): string {
   return (import.meta.env.VITE_API_BASE ?? '').replace(/\/$/, '');
@@ -40,7 +40,6 @@ export function postDescribe(mermaid: string) {
   return postJson('/api/describe', { mermaid });
 }
 
-export function postSuggestType(text: string): Promise<import('@shared/types').DiagramSuggestionResponse> {
+export function postSuggestType(text: string): Promise<DiagramSuggestionResponse> {
   return postJson('/api/suggest-type', { text });
 }
-
