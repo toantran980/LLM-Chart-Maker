@@ -128,14 +128,14 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: st
       nodeRadius: '12'
     },
     flowchart: {
-      useMaxWidth: false,
+      useMaxWidth: true,
       htmlLabels: true,
       curve: 'basis',
       padding: 24,
       nodeSpacing: 70,
       rankSpacing: 70,
       diagramPadding: 24,
-      wrappingWidth: 200
+      wrappingWidth: 300
     }
   });
 
