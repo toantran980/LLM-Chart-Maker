@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import mermaid from 'mermaid';
 import type { MermaidConfig } from 'mermaid';
 import { getAutoZoom } from './utils/diagram';
@@ -181,39 +181,42 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
     });
   }, [chart, theme, onError]);
 
-  // Zoom / Pan state
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const dragging = useRef(false);
+  // Zoom / Pan state — derive from autoZoom when user hasn't manually adjusted
+  const autoZoom = useMemo(() => getAutoZoom(chart), [chart]);
+  const [manualZoom, setManualZoom] = useState<number | null>(null);
+  const [manualPan, setManualPan] = useState<{ x: number; y: number } | null>(null);
+  const zoom = manualZoom ?? autoZoom;
+  const pan = manualPan ?? { x: 0, y: 0 };
+  const draggingRef = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    setZoom(getAutoZoom(chart));
-    setPan({ x: 0, y: 0 });
-  }, [chart]);
+  const [isDragging, setIsDragging] = useState(false);
 
   const resetView = useCallback(() => {
-    setZoom(getAutoZoom(chart));
-    setPan({ x: 0, y: 0 });
-  }, [chart]);
+    setManualZoom(null);
+    setManualPan(null);
+  }, []);
 
-  const zoomIn = useCallback(() => setZoom(prev => Math.min(5, Math.round((prev + 0.25) * 100) / 100)), []);
-  const zoomOut = useCallback(() => setZoom(prev => Math.max(0.25, Math.round((prev - 0.25) * 100) / 100)), []);
+  const zoomIn = useCallback(() => setManualZoom(prev => Math.min(5, Math.round(((prev ?? autoZoom) + 0.25) * 100) / 100)), [autoZoom]);
+  const zoomOut = useCallback(() => setManualZoom(prev => Math.max(0.25, Math.round(((prev ?? autoZoom) - 0.25) * 100) / 100)), [autoZoom]);
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
-    dragging.current = true;
+    draggingRef.current = true;
+    setIsDragging(true);
     lastPos.current = { x: e.clientX, y: e.clientY };
   }, []);
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!dragging.current) return;
+    if (!draggingRef.current) return;
     const dx = e.clientX - lastPos.current.x;
     const dy = e.clientY - lastPos.current.y;
     lastPos.current = { x: e.clientX, y: e.clientY };
-    setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+    setManualPan(prev => ({ x: (prev?.x ?? 0) + dx, y: (prev?.y ?? 0) + dy }));
   }, []);
 
-  const onMouseUp = useCallback(() => { dragging.current = false; }, []);
+  const onMouseUp = useCallback(() => {
+    draggingRef.current = false;
+    setIsDragging(false);
+  }, []);
 
   return (
     <div style={{ width: '100%', position: 'relative' }}>
@@ -243,7 +246,7 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
         style={{
           width: '100%',
           overflow: 'hidden',
-          cursor: dragging.current ? 'grabbing' : 'grab',
+          cursor: isDragging ? 'grabbing' : 'grab',
           userSelect: 'none',
         }}
         onMouseDown={onMouseDown}
@@ -261,7 +264,7 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
             padding: '3rem 1rem',
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: 'center top',
-            transition: dragging.current ? 'none' : 'transform 0.05s ease',
+            transition: isDragging ? 'none' : 'transform 0.05s ease',
           }}
         />
       </div>

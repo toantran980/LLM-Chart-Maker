@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { SyntheticEvent } from 'react';
 
 const PROMPT_EXAMPLES = [
@@ -15,18 +15,14 @@ interface Props {
 
 export default function RefineBar({ onRefine, loading }: Props) {
   const [instruction, setInstruction] = useState('');
-  const [recentPrompts, setRecentPrompts] = useState<string[]>([]);
-
-  useEffect(() => {
+  const [recentPrompts, setRecentPrompts] = useState<string[]>(() => {
     try {
       const stored = window.localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (stored) {
-        setRecentPrompts(JSON.parse(stored) as string[]);
-      }
+      return stored ? (JSON.parse(stored) as string[]) : [];
     } catch {
-      // ignore localStorage failures
+      return [];
     }
-  }, []);
+  });
 
   const saveRecentPrompts = (value: string[]) => {
     setRecentPrompts(value);

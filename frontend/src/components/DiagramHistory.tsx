@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   loadHistory,
   clearHistory,
@@ -15,31 +15,29 @@ interface Props {
 }
 
 export default function DiagramHistory({ onRestore, refreshTrigger }: Props) {
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps force re-read from localStorage
+  const history = useMemo(() => loadHistory(), [refreshTrigger, historyRefresh]);
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
 
-  useEffect(() => {
-    setHistory(loadHistory());
-  }, [refreshTrigger]);
-
   const handleClearAll = () => {
     if (confirm('Are you sure you want to clear your entire diagram history?')) {
       clearHistory();
-      setHistory([]);
+      setHistoryRefresh(k => k + 1);
       setIsOpen(false);
     }
   };
 
   const handleUpdateTitle = (id: string, title: string) => {
-    const updated = updateHistoryEntry(id, { title: title.trim() || undefined });
-    setHistory(updated);
+    updateHistoryEntry(id, { title: title.trim() || undefined });
+    setHistoryRefresh(k => k + 1);
   };
 
   const handleDelete = (id: string) => {
-    const updated = deleteHistoryEntry(id);
-    setHistory(updated);
+    deleteHistoryEntry(id);
+    setHistoryRefresh(k => k + 1);
   };
 
   const availableTypes = useMemo(() => {

@@ -9,10 +9,6 @@ export default function CodeEditor({ code, onChange }: Props) {
   const [localCode, setLocalCode] = useState(code);
 
   useEffect(() => {
-    setLocalCode(code);
-  }, [code]);
-
-  useEffect(() => {
     const handler = setTimeout(() => {
       if (localCode !== code) {
         onChange(localCode);
