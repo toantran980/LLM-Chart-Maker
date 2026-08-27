@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
 import type { MermaidConfig } from 'mermaid';
-import { getAutoZoom } from './utils/diagram';
+import { computeFitZoom } from './utils/diagram';
 
 type MermaidTheme = NonNullable<MermaidConfig['theme']>;
 
@@ -21,7 +21,6 @@ function isMermaidTheme(value: string): value is MermaidTheme {
 
 /* ---------- Safe DOM helpers (no innerHTML with user content) ---------- */
 
-/** Clear a container and insert a single text message element. */
 function clearAndSetMessage(container: HTMLElement, text: string, className: string) {
   container.textContent = '';
   const el = document.createElement('div');
@@ -36,11 +35,6 @@ function clearAndSetMessage(container: HTMLElement, text: string, className: str
   container.appendChild(el);
 }
 
-/**
- * Build the error display using safe DOM APIs.
- * The error `message` is set via `textContent` so hostile strings
- * (e.g. "<img onerror=alert(1)>") are rendered as harmless text.
- */
 function buildErrorDisplay(container: HTMLElement, message: string, chartCode?: string) {
   container.textContent = '';
 
@@ -56,7 +50,6 @@ function buildErrorDisplay(container: HTMLElement, message: string, chartCode?: 
     maxWidth: '100%',
   });
 
-  // Header
   const header = document.createElement('div');
   Object.assign(header.style, {
     display: 'flex',
@@ -70,13 +63,11 @@ function buildErrorDisplay(container: HTMLElement, message: string, chartCode?: 
   header.appendChild(title);
   box.appendChild(header);
 
-  // Description
   const desc = document.createElement('p');
   Object.assign(desc.style, { margin: '0 0 1rem 0', opacity: '0.8' });
   desc.textContent = 'The generated Mermaid code has a syntax error. This can happen with complex text inputs.';
   box.appendChild(desc);
 
-  // Extract problematic line from error message if chart code is available
   if (chartCode) {
     const lineMatch = message.match(/line\s+(\d+)/i);
     if (lineMatch) {
@@ -120,7 +111,6 @@ function buildErrorDisplay(container: HTMLElement, message: string, chartCode?: 
     }
   }
 
-  // Collapsible details
   const details = document.createElement('details');
   details.style.cursor = 'pointer';
   const summary = document.createElement('summary');
@@ -139,7 +129,6 @@ function buildErrorDisplay(container: HTMLElement, message: string, chartCode?: 
     border: '1px solid #fecaca',
     fontSize: '0.85rem',
   });
-  // Safe: textContent escapes any HTML in the error message
   pre.textContent = message || 'Unknown syntax error';
   details.appendChild(pre);
   box.appendChild(details);
@@ -147,9 +136,18 @@ function buildErrorDisplay(container: HTMLElement, message: string, chartCode?: 
   container.appendChild(box);
 }
 
-/* ---------- Mermaid render function ---------- */
+/* ---------- Mermaid render + post-process ---------- */
 
-async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: string = 'base') {
+interface ContentBounds {
+  width: number;
+  height: number;
+}
+
+async function renderMermaid(
+  def: string,
+  containerEl: HTMLDivElement,
+  theme: string = 'base',
+): Promise<ContentBounds> {
   const resolvedTheme: MermaidTheme = isMermaidTheme(theme) ? theme : 'base';
   mermaid.initialize({
     startOnLoad: false,
@@ -184,15 +182,41 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: st
   });
 
   const uid = 'm' + Math.random().toString(36).substring(2, 10);
+  const { svg } = await mermaid.render(uid, def);
+  containerEl.innerHTML = svg;
+
+  const svgEl = containerEl.querySelector('svg');
+  if (!svgEl) return { width: 0, height: 0 };
+
+  const pad = 32;
 
   try {
-    const { svg } = await mermaid.render(uid, def);
-    containerEl.innerHTML = svg;
+    const groups = svgEl.querySelectorAll('g');
+    let contentG: SVGGElement | null = null;
+    for (const g of groups) {
+      if (g.id && /^d\d+$/.test(g.id)) { contentG = g; break; }
+    }
+    if (!contentG && groups.length > 0) contentG = groups[0] as SVGGElement;
+    if (!contentG) return { width: 0, height: 0 };
 
-  } catch (err) {
-    console.error('[Mermaid] Render failed for definition:', def);
-    console.error('[Mermaid] Error details:', err);
-    throw err;
+    const bbox = contentG.getBBox();
+    if (bbox.width === 0 || bbox.height === 0) return { width: 0, height: 0 };
+
+    svgEl.setAttribute('viewBox',
+      `${bbox.x - pad} ${bbox.y - pad} ${bbox.width + 2 * pad} ${bbox.height + 2 * pad}`);
+    svgEl.removeAttribute('width');
+    svgEl.removeAttribute('height');
+    svgEl.style.width = '100%';
+    svgEl.style.height = 'auto';
+    svgEl.style.maxHeight = '100%';
+    svgEl.style.display = 'block';
+
+    return { width: bbox.width + 2 * pad, height: bbox.height + 2 * pad };
+  } catch {
+    svgEl.style.width = '100%';
+    svgEl.style.height = 'auto';
+    svgEl.style.display = 'block';
+    return { width: 0, height: 0 };
   }
 }
 
@@ -200,31 +224,8 @@ async function renderMermaid(def: string, containerEl: HTMLDivElement, theme: st
 
 export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps) {
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!ref.current) return;
-
-    // Clear previous content
-    clearAndSetMessage(ref.current, 'Rendering diagram...', 'mermaid-loading');
-
-    if (!chart || !chart.trim()) {
-      clearAndSetMessage(ref.current, 'No diagram data available', 'mermaid-empty');
-      return;
-    }
-
-    renderMermaid(chart, ref.current, theme).catch((err) => {
-      if (ref.current) {
-        const message = err instanceof Error ? err.message : String(err);
-        buildErrorDisplay(ref.current, message, chart);
-      }
-      if (onError) {
-        onError(err instanceof Error ? err : new Error(String(err)));
-      }
-    });
-  }, [chart, theme, onError]);
-
-  // Zoom / Pan state — derive from autoZoom when user hasn't manually adjusted
-  const autoZoom = useMemo(() => getAutoZoom(chart), [chart]);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [autoZoom, setAutoZoom] = useState(1);
   const [manualZoom, setManualZoom] = useState<number | null>(null);
   const [manualPan, setManualPan] = useState<{ x: number; y: number } | null>(null);
   const zoom = manualZoom ?? autoZoom;
@@ -232,6 +233,36 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
   const draggingRef = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    clearAndSetMessage(ref.current, 'Rendering diagram...', 'mermaid-loading');
+
+    if (!chart || !chart.trim()) {
+      clearAndSetMessage(ref.current, 'No diagram data available', 'mermaid-empty');
+      return;
+    }
+
+    renderMermaid(chart, ref.current, theme)
+      .then((bounds) => {
+        if (!viewportRef.current || bounds.width <= 0 || bounds.height <= 0) return;
+        const vp = viewportRef.current;
+        const availW = vp.clientWidth - 32;
+        const availH = vp.clientHeight - 96;
+        if (availW <= 0 || availH <= 0) return;
+        const fit = computeFitZoom(availW, availH, bounds.width, bounds.height);
+        setAutoZoom(fit);
+        setManualZoom(null);
+        setManualPan(null);
+      })
+      .catch((err) => {
+        if (ref.current) {
+          const message = err instanceof Error ? err.message : String(err);
+          buildErrorDisplay(ref.current, message, chart);
+        }
+        if (onError) onError(err instanceof Error ? err : new Error(String(err)));
+      });
+  }, [chart, theme, onError]);
 
   const resetView = useCallback(() => {
     setManualZoom(null);
@@ -270,7 +301,6 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
         gap: '0.5rem',
         zIndex: 10
       }}>
-        {/* Zoom controls */}
         <button onClick={zoomOut} className="secondary-btn-xs" title="Zoom out" style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1, padding: '0.25rem 0.55rem' }}>−</button>
         <button
           onClick={resetView}
@@ -283,8 +313,8 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
         <button onClick={zoomIn} className="secondary-btn-xs" title="Zoom in" style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1, padding: '0.25rem 0.55rem' }}>+</button>
       </div>
 
-      {/* Zoom/pan viewport */}
       <div
+        ref={viewportRef}
         style={{
           width: '100%',
           overflow: 'hidden',
@@ -303,9 +333,11 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
             width: '100%',
             display: 'flex',
             justifyContent: 'center',
-            padding: '3rem 1rem',
+            alignItems: 'center',
+            padding: '2rem 1rem',
+            minHeight: '360px',
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: 'center top',
+            transformOrigin: 'center center',
             transition: isDragging ? 'none' : 'transform 0.05s ease',
           }}
         />

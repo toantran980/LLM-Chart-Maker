@@ -9,3 +9,15 @@ export function getAutoZoom(chart: string): number {
 
   return Number(Math.max(0.85, Math.min(1.2, zoom)).toFixed(2));
 }
+
+export function computeFitZoom(
+  containerWidth: number,
+  containerHeight: number,
+  contentWidth: number,
+  contentHeight: number,
+): number {
+  if (contentWidth <= 0 || contentHeight <= 0) return 1;
+  const scaleX = containerWidth / contentWidth;
+  const scaleY = containerHeight / contentHeight;
+  return Number(Math.max(0.25, Math.min(1.5, Math.min(scaleX, scaleY))).toFixed(2));
+}
