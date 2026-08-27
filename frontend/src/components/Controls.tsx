@@ -20,7 +20,7 @@ interface ControlsProps {
 }
 
 const DIRECTIONS = [
-  { value: 'auto', label: '✨ Auto (AI picks)' },
+  { value: 'auto', label: '✨ Auto' },
   { value: 'LR', label: '→ Left to Right' },
   { value: 'RL', label: '← Right to Left' },
   { value: 'TD', label: '↓ Top to Bottom' },

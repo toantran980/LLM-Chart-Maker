@@ -41,7 +41,7 @@ function clearAndSetMessage(container: HTMLElement, text: string, className: str
  * The error `message` is set via `textContent` so hostile strings
  * (e.g. "<img onerror=alert(1)>") are rendered as harmless text.
  */
-function buildErrorDisplay(container: HTMLElement, message: string) {
+function buildErrorDisplay(container: HTMLElement, message: string, chartCode?: string) {
   container.textContent = '';
 
   const box = document.createElement('div');
@@ -75,6 +75,50 @@ function buildErrorDisplay(container: HTMLElement, message: string) {
   Object.assign(desc.style, { margin: '0 0 1rem 0', opacity: '0.8' });
   desc.textContent = 'The generated Mermaid code has a syntax error. This can happen with complex text inputs.';
   box.appendChild(desc);
+
+  // Extract problematic line from error message if chart code is available
+  if (chartCode) {
+    const lineMatch = message.match(/line\s+(\d+)/i);
+    if (lineMatch) {
+      const lineNum = parseInt(lineMatch[1], 10);
+      const codeLines = chartCode.split('\n');
+      if (lineNum >= 1 && lineNum <= codeLines.length) {
+        const contextBox = document.createElement('div');
+        Object.assign(contextBox.style, {
+          marginBottom: '1rem',
+          padding: '0.75rem',
+          background: '#fff',
+          borderRadius: '6px',
+          border: '1px solid #fecaca',
+          fontSize: '0.85rem',
+        });
+        const contextLabel = document.createElement('strong');
+        contextLabel.textContent = `Problem on line ${lineNum}:`;
+        contextBox.appendChild(contextLabel);
+
+        const codeBlock = document.createElement('pre');
+        Object.assign(codeBlock.style, {
+          marginTop: '0.5rem',
+          whiteSpace: 'pre-wrap',
+          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+          fontSize: '0.8rem',
+          margin: '0.5rem 0 0 0',
+        });
+        const start = Math.max(0, lineNum - 2);
+        const end = Math.min(codeLines.length, lineNum + 1);
+        const snippet = codeLines
+          .slice(start, end)
+          .map((l, i) => {
+            const actualLine = start + i + 1;
+            return actualLine === lineNum ? `→ ${l} ←` : `  ${l}`;
+          })
+          .join('\n');
+        codeBlock.textContent = snippet;
+        contextBox.appendChild(codeBlock);
+        box.appendChild(contextBox);
+      }
+    }
+  }
 
   // Collapsible details
   const details = document.createElement('details');
@@ -171,7 +215,7 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
     renderMermaid(chart, ref.current, theme).catch((err) => {
       if (ref.current) {
         const message = err instanceof Error ? err.message : String(err);
-        buildErrorDisplay(ref.current, message);
+        buildErrorDisplay(ref.current, message, chart);
       }
       if (onError) {
         onError(err instanceof Error ? err : new Error(String(err)));

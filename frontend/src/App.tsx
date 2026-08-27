@@ -217,19 +217,20 @@ export default function App() {
 
   return (
     <div className="app">
-      <button className="mode-toggle-btn" onClick={() => setDarkMode(!darkMode)} aria-pressed={darkMode}>
-        {darkMode ? '☀️ Light' : '🌙 Dark'}
-      </button>
-
-      <header aria-labelledby="app-title">
-        <h1 id="app-title">Chart Maker</h1>
-        <p className="main-subheading">
-          Transform your text into beautiful diagrams using AI.
-          {fallbackMode && <span style={{ color: '#f59e0b', fontWeight: 'bold' }}> (Local Parser)</span>}
-        </p>
-        <p className="shortcut-note">
-          Keyboard shortcuts: <strong>Ctrl/Cmd+Enter</strong> for full generation, <strong>Ctrl/Cmd+Shift+Enter</strong> for selection.
-        </p>
+      <header aria-labelledby="app-title" className="app-header">
+        <div className="header-text">
+          <h1 id="app-title">Chart Maker</h1>
+          <p className="main-subheading">
+            Transform your text into beautiful diagrams using AI.
+            {fallbackMode && <span style={{ color: '#f59e0b', fontWeight: 'bold' }}> (Local Parser)</span>}
+          </p>
+          <p className="shortcut-note">
+            Keyboard shortcuts: <strong>Ctrl/Cmd+Enter</strong> for full generation, <strong>Ctrl/Cmd+Shift+Enter</strong> for selection.
+          </p>
+        </div>
+        <button className="mode-toggle-btn" onClick={() => setDarkMode(!darkMode)} aria-pressed={darkMode}>
+          {darkMode ? '☀️ Light' : '🌙 Dark'}
+        </button>
       </header>
 
       {uploadedFile && uploadedFile.type === 'application/pdf' ? (

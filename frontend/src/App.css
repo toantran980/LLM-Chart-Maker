@@ -24,6 +24,19 @@ header {
   text-align: center;
 }
 
+.app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.header-text {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
 header h1 {
   font-size: 3.5rem;
   font-weight: 800;
@@ -376,9 +389,7 @@ header h1 {
 
 /* Dark Mode Toggle */
 .mode-toggle-btn {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
+  flex-shrink: 0;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   color: var(--text-primary);
@@ -387,6 +398,7 @@ header h1 {
   font-weight: 600;
   font-size: 0.9rem;
   box-shadow: var(--shadow-sm);
+  align-self: flex-start;
 }
 
 .mode-toggle-btn:hover {
@@ -433,7 +445,7 @@ button {
 /* Main Textarea / Editor Area */
 .main-textarea {
   width: 100%;
-  min-height: 250px;
+  min-height: 300px;
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid var(--card-border);
   border-radius: var(--radius-md);
@@ -475,27 +487,19 @@ button {
 
 .settings-grid {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 1.5rem;
-  align-items: flex-end;
-}
-
-@media (max-width: 900px) {
-  .settings-grid {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1.25rem;
-  }
+  align-items: stretch;
 }
 
 .setting-item {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  flex: 0 0 auto;
+  width: 100%;
 }
 
-/* Actions item stretches to fill remaining horizontal space */
+/* Actions item gets slightly more room for the button-row */
 .setting-item:last-child {
   flex: 1 1 auto;
 }
@@ -505,19 +509,23 @@ button {
   background: var(--card-bg);
   border: 2px solid var(--card-border);
   border-radius: var(--radius-sm);
-  padding: 0.85rem 1.25rem;
-  padding-right: 3rem;
+  padding: 0.85rem 1.4rem 0.85rem 1rem;
   color: var(--text-primary);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236366f1' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 1rem center;
-  background-size: 1.4rem;
+  background-position: right 0.25rem center;
+  background-size: 1.05rem;
   transition: all 0.3s ease;
   box-shadow: var(--shadow-sm);
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  text-indent: 0;
+  letter-spacing: normal;
+  word-spacing: normal;
 }
 
 .modern-select:hover {
@@ -527,13 +535,23 @@ button {
 
 .button-row {
   display: flex;
-  gap: 1.25rem;
   flex-wrap: wrap;
-  align-items: center;
+  gap: 1rem;
+  align-items: stretch;
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 
-.primary-btn, .secondary-btn {
-  display: inline-flex;
+.button-row > * {
+  flex: 1 1 280px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.primary-btn, .secondary-btn, .button-row .modern-upload-btn {
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.85rem;
@@ -542,10 +560,13 @@ button {
   font-weight: 700;
   font-size: 0.95rem;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 52px;
+  height: 52px;
   border: none;
   cursor: pointer;
-  white-space: nowrap;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .primary-btn {
@@ -599,23 +620,24 @@ button:disabled {
 /* File Upload Component */
 .modern-upload-btn {
   position: relative;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.85rem;
   background: var(--card-bg);
   border: 2px dashed var(--card-border);
-  padding: 0.95rem 1.8rem;
+  padding: 0.9rem 1.75rem;
   border-radius: var(--radius-sm);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--text-primary);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  min-height: 56px;
+  height: 52px;
   box-sizing: border-box;
   backdrop-filter: blur(5px);
   overflow: hidden;
+  text-overflow: ellipsis;
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
 }
 
@@ -890,9 +912,8 @@ body.dark-mode .section-result {
   color: var(--text-primary);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .app {
-    width: 100%;
     padding: 2rem 1rem;
   }
 
@@ -914,17 +935,38 @@ body.dark-mode .section-result {
     flex-direction: column;
   }
 
+  .button-row > * {
+    flex: none;
+    width: 100%;
+  }
+
   .modern-upload-btn {
     width: 100%;
+  }
+
+  header h1 {
+    font-size: 2.8rem;
   }
 }
 
 @media (max-width: 640px) {
+  .app {
+    padding: 1.5rem;
+  }
+
+  .app-header {
+    flex-direction: column;
+    align-items: center;
+  }
+
   .mode-toggle-btn {
-    top: 1rem;
-    right: 1rem;
+    order: -1;
     padding: 0.55rem 1rem;
     font-size: 0.85rem;
+  }
+
+  header h1 {
+    font-size: 2.2rem;
   }
 
   .main-subheading {
@@ -941,9 +983,21 @@ body.dark-mode .section-result {
     font-size: 0.9rem;
   }
 
-  .result-actions {
+  .button-row {
     flex-direction: column;
-    align-items: stretch;
+  }
+
+  .button-row > * {
+    flex: none;
+    width: 100%;
+  }
+
+  .modern-upload-btn {
+    width: 100%;
+  }
+
+  .main-textarea {
+    min-height: 40vh;
   }
 }
 
@@ -1048,37 +1102,7 @@ body.dark-mode .section-result {
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
-  .app {
-    padding: 2rem;
-  }
-  
-  header h1 {
-    font-size: 2.8rem;
-  }
-  
-  .controls {
-    grid-template-columns: 1fr;
-  }
-}
 
-@media (max-width: 640px) {
-  .app {
-    padding: 1.5rem;
-  }
-  
-  header h1 {
-    font-size: 2.2rem;
-  }
-  
-  .button-row {
-    flex-direction: column;
-  }
-  
-  button {
-    width: 100%;
-  }
-}
 .pdf-viewer-outer {
   display: flex;
   flex-direction: column;

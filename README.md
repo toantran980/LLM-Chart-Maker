@@ -22,6 +22,7 @@ Live App: https://llm-chart-maker-frontend.vercel.app/
 - **Backend:** Node.js, Express, TypeScript, Vitest, Axios
 - **Infrastructure:** npm workspaces, Docker Compose, Nginx, GitHub Actions CI, Vercel (frontend), Render (backend)
 - **AI:** OpenAI-compatible LLM integration with a local parser fallback
+- **Production:** Helmet, compression, request IDs, structured logging, rate limiting (Upstash Redis or in-memory)
 
 ---
 
@@ -30,6 +31,7 @@ Live App: https://llm-chart-maker-frontend.vercel.app/
 - Generate flowcharts, timelines, rules maps, Gantt charts, ER diagrams, mind maps, and Git graphs
 - Generate from all editor text, a text selection, highlighted text, a PDF selection, or an entire PDF
 - Choose an automatic, left-to-right, right-to-left, top-to-bottom, or bottom-to-top layout where supported
+- Auto-suggest the best diagram type from your input text
 - Refine a diagram with natural-language instructions and request a plain-language description
 - Edit Mermaid source in the app, then copy the code or an embeddable SVG snippet
 - Export rendered diagrams as SVG or PNG; zoom and pan the canvas; select one of five Mermaid themes
@@ -131,8 +133,24 @@ npm run dev
 | `npm run build`         | Build frontend and backend          |
 | `npm run test`          | Run frontend and backend tests      |
 | `npm run frontend:lint` | Lint the frontend                   |
+| `npm run backend:dev`   | Start backend only                  |
+| `npm run frontend:dev`  | Start frontend only                 |
 
 Individual workspace scripts are available for running one service by itself (`npm run backend:dev`, `npm run frontend:build`, etc.).
+
+### Troubleshooting
+
+If `npm run dev` fails with `EADDRINUSE` on port 4173 or 5173, kill any lingering Node processes:
+
+```bash
+# Windows
+taskkill /F /IM node.exe
+
+# macOS / Linux
+killall node
+```
+
+Then re-run `npm run dev`.
 
 ---
 
@@ -148,13 +166,14 @@ Visit `http://localhost` in your browser. Provide `OPENAI_API_KEY` in the root `
 
 ## API endpoints
 
-| Endpoint               | Purpose                                                           |
-| ---------------------- | ----------------------------------------------------------------- |
-| `GET /health`        | Reports backend availability and whether fallback mode is active. |
-| `POST /api/diagram`  | Generates a Mermaid diagram from source text.                     |
-| `POST /api/refine`   | Refines an existing diagram from an instruction.                  |
-| `POST /api/fix`      | Attempts to repair Mermaid code after a render error.             |
-| `POST /api/describe` | Returns a plain-language description of Mermaid code.             |
+| Endpoint                  | Purpose                                                           |
+| ------------------------- | ----------------------------------------------------------------- |
+| `GET /health`            | Reports availability, fallback mode, uptime, and memory usage.    |
+| `POST /api/diagram`      | Generates a Mermaid diagram from source text.                     |
+| `POST /api/refine`       | Refines an existing diagram from an instruction.                  |
+| `POST /api/fix`          | Attempts to repair Mermaid code after a render error.             |
+| `POST /api/describe`     | Returns a plain-language description of Mermaid code.             |
+| `POST /api/suggest-type` | Recommends the best diagram type for a given input text.          |
 
 LLM routes validate request bodies and enforce size limits. Default rate limit: 20 requests per IP or API key per minute. Configure `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS` for a different policy. Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` for shared rate limiting across instances.
 
