@@ -92,6 +92,23 @@ New endpoint + small UI. Useful for accessibility and documentation.
 
 ---
 
+## 🟢 Latest — Fit-to-Screen Rendering
+
+> UX overhaul for how rendered SVG fills the canvas. Done, but has follow-ups.
+
+### 8b. Fit-to-Screen Rendering & Auto-zoom
+
+- [X] Tighten the SVG `viewBox` to the content `getBBox()` (drops Mermaid's excess margins)
+- [X] Compute a real "fit" zoom from container vs. content dimensions after render (not a text heuristic)
+- [X] Vertically center diagram content in the canvas
+- [X] **Direction-aware flowcharts** — for `graph LR`/`RL` with many sequential nodes, auto-nudge to `TD` so the diagram uses vertical space instead of a thin strip
+- [X] Keyboard shortcuts for zoom (`+` / `−` / `0`) + mouse-wheel zoom
+- [X] Fullscreen / presentation mode (`⛶` in actions bar, `Esc` to exit)
+- [X] "Open in Mermaid Live Editor" deep-link button
+- [X] Theme persistence via `localStorage`
+
+---
+
 ## 🟡 Next Up — Do These Later
 
 > Meaningful work but no new infrastructure required.
@@ -224,3 +241,9 @@ database (Pinecone/Supabase pgvector), and a chat UI. High cost per request.
 **Why hard:** Needs a GPU server, model serving (Ollama/vLLM), and prompt tuning to match
 OpenAI output quality.
 **Revisit when:** OpenAI API costs become a real problem at scale.
+
+---
+
+> 💡 New feature ideas live in **`SPARK_IDEAS.md`** — keep them separate from the roadmap.
+
+

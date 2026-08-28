@@ -42,6 +42,32 @@ describe('API', () => {
     if (originalKey) process.env.OPENAI_API_KEY = originalKey;
   });
 
+  it('GET /health includes metrics', async () => {
+    const app = createApp();
+    const res = await request(app).get('/health');
+    expect(res.status).toBe(200);
+    expect(res.body.metrics).toBeDefined();
+    expect(typeof res.body.metrics.totalRequests).toBe('number');
+    expect(res.body.metrics.fallbackCount).toBeDefined();
+  });
+
+  it('GET /api/openapi.json returns the spec', async () => {
+    const app = createApp();
+    const res = await request(app).get('/api/openapi.json');
+    expect(res.status).toBe(200);
+    expect(res.body.openapi).toBe('3.0.3');
+    expect(Object.keys(res.body.paths)).toContain('/api/diagram');
+    expect(res.body.components.schemas.DiagramRequest).toBeDefined();
+  });
+
+  it('GET /api/docs serves Swagger UI HTML', async () => {
+    const app = createApp();
+    const res = await request(app).get('/api/docs');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('text/html');
+    expect(res.text).toContain('swagger-ui');
+  });
+
   it('POST /api/diagram rejects missing fields', async () => {
     const app = createApp();
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
 import type { MermaidConfig } from 'mermaid';
-import { computeFitZoom } from './utils/diagram';
+import { computeFitZoom, buildMermaidLiveUrl } from './utils/diagram';
 
 type MermaidTheme = NonNullable<MermaidConfig['theme']>;
 
@@ -222,17 +222,35 @@ async function renderMermaid(
 
 /* ---------- React component ---------- */
 
-export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps) {
+interface ViewState {
+  autoZoom: number;
+  manualZoom: number | null;
+  manualPan: { x: number; y: number } | null;
+}
+
+function DiagramSurface({
+  chart,
+  theme,
+  onError,
+  view,
+  setView,
+  extraActions,
+}: {
+  chart: string;
+  theme: string;
+  onError?: (error: Error) => void;
+  view: ViewState | null;
+  setView: (v: React.SetStateAction<ViewState | null>) => void;
+  extraActions?: React.ReactNode;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const [autoZoom, setAutoZoom] = useState(1);
-  const [manualZoom, setManualZoom] = useState<number | null>(null);
-  const [manualPan, setManualPan] = useState<{ x: number; y: number } | null>(null);
-  const zoom = manualZoom ?? autoZoom;
-  const pan = manualPan ?? { x: 0, y: 0 };
   const draggingRef = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+
+  const zoom = view?.manualZoom ?? view?.autoZoom ?? 1;
+  const pan = view?.manualPan ?? { x: 0, y: 0 };
 
   useEffect(() => {
     if (!ref.current) return;
@@ -251,9 +269,7 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
         const availH = vp.clientHeight - 96;
         if (availW <= 0 || availH <= 0) return;
         const fit = computeFitZoom(availW, availH, bounds.width, bounds.height);
-        setAutoZoom(fit);
-        setManualZoom(null);
-        setManualPan(null);
+        setView({ autoZoom: fit, manualZoom: null, manualPan: null });
       })
       .catch((err) => {
         if (ref.current) {
@@ -262,15 +278,21 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
         }
         if (onError) onError(err instanceof Error ? err : new Error(String(err)));
       });
-  }, [chart, theme, onError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chart, theme]);
 
   const resetView = useCallback(() => {
-    setManualZoom(null);
-    setManualPan(null);
-  }, []);
+    setView(() => ({ autoZoom: 1, manualZoom: null, manualPan: null }));
+  }, [setView]);
 
-  const zoomIn = useCallback(() => setManualZoom(prev => Math.min(5, Math.round(((prev ?? autoZoom) + 0.25) * 100) / 100)), [autoZoom]);
-  const zoomOut = useCallback(() => setManualZoom(prev => Math.max(0.25, Math.round(((prev ?? autoZoom) - 0.25) * 100) / 100)), [autoZoom]);
+  const zoomBy = useCallback((delta: number) => {
+    setView((prev) => {
+      const v = prev ?? { autoZoom: 1, manualZoom: null, manualPan: null };
+      const base = v.manualZoom ?? v.autoZoom;
+      const next = Math.min(5, Math.max(0.25, Math.round((base + delta) * 100) / 100));
+      return { ...v, manualZoom: next };
+    });
+  }, [setView]);
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     draggingRef.current = true;
@@ -283,36 +305,28 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
     const dx = e.clientX - lastPos.current.x;
     const dy = e.clientY - lastPos.current.y;
     lastPos.current = { x: e.clientX, y: e.clientY };
-    setManualPan(prev => ({ x: (prev?.x ?? 0) + dx, y: (prev?.y ?? 0) + dy }));
-  }, []);
+    setView((prev) => {
+      const v = prev ?? { autoZoom: 1, manualZoom: null, manualPan: null };
+      return {
+        ...v,
+        manualPan: { x: (v.manualPan?.x ?? 0) + dx, y: (v.manualPan?.y ?? 0) + dy },
+      };
+    });
+  }, [setView]);
 
   const onMouseUp = useCallback(() => {
     draggingRef.current = false;
     setIsDragging(false);
   }, []);
 
-  return (
-    <div style={{ width: '100%', position: 'relative' }}>
-      <div className="mermaid-actions-bar" style={{
-        position: 'absolute',
-        top: '1rem',
-        right: '1rem',
-        display: 'flex',
-        gap: '0.5rem',
-        zIndex: 10
-      }}>
-        <button onClick={zoomOut} className="secondary-btn-xs" title="Zoom out" style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1, padding: '0.25rem 0.55rem' }}>−</button>
-        <button
-          onClick={resetView}
-          className="secondary-btn-xs"
-          title="Reset zoom (drag to pan)"
-          style={{ fontSize: '0.72rem', padding: '0.35rem 0.5rem', minWidth: '3.2rem', textAlign: 'center' }}
-        >
-          🔍 {Math.round(zoom * 100)}%
-        </button>
-        <button onClick={zoomIn} className="secondary-btn-xs" title="Zoom in" style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1, padding: '0.25rem 0.55rem' }}>+</button>
-      </div>
+  const onWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    zoomBy(delta);
+  }, [zoomBy]);
 
+  return (
+    <>
       <div
         ref={viewportRef}
         style={{
@@ -325,6 +339,7 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseUp}
+        onWheel={onWheel}
       >
         <div
           ref={ref}
@@ -342,6 +357,172 @@ export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps
           }}
         />
       </div>
+      <div className="mermaid-actions-bar" style={{
+        position: 'absolute',
+        top: '1rem',
+        right: '1rem',
+        display: 'flex',
+        gap: '0.5rem',
+        zIndex: 10
+      }}>
+        <button onClick={() => zoomBy(-0.25)} className="secondary-btn-xs" title="Zoom out (−)" style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1, padding: '0.25rem 0.55rem' }}>−</button>
+        <button
+          onClick={resetView}
+          className="secondary-btn-xs"
+          title="Reset zoom (0)"
+          style={{ fontSize: '0.72rem', padding: '0.35rem 0.5rem', minWidth: '3.2rem', textAlign: 'center' }}
+        >
+          🔍 {Math.round(zoom * 100)}%
+        </button>
+        <button onClick={() => zoomBy(0.25)} className="secondary-btn-xs" title="Zoom in (+)" style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1, padding: '0.25rem 0.55rem' }}>+</button>
+        {extraActions}
+      </div>
+    </>
+  );
+}
+
+export default function Mermaid({ chart, theme = 'base', onError }: MermaidProps) {
+  const [inline, setInline] = useState<ViewState | null>(null);
+  const [fullscreen, setFullscreen] = useState<ViewState | null>(null);
+
+  // Keyboard shortcuts: +/-/0 zoom when not typing in an input/textarea
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      const dir = fullscreen ? setFullscreen : setInline;
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        dir((prev) => {
+          const v = prev ?? { autoZoom: 1, manualZoom: null, manualPan: null };
+          const base = v.manualZoom ?? v.autoZoom;
+          return { ...v, manualZoom: Math.min(5, Math.max(0.25, Math.round((base + 0.25) * 100) / 100)) };
+        });
+      } else if (e.key === '-') {
+        e.preventDefault();
+        dir((prev) => {
+          const v = prev ?? { autoZoom: 1, manualZoom: null, manualPan: null };
+          const base = v.manualZoom ?? v.autoZoom;
+          return { ...v, manualZoom: Math.min(5, Math.max(0.25, Math.round((base - 0.25) * 100) / 100)) };
+        });
+      } else if (e.key === '0') {
+        e.preventDefault();
+        dir((prev) => (prev ? { ...prev, manualZoom: null, manualPan: null } : prev));
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [fullscreen]);
+
+  // Block background scroll while in fullscreen + Escape to exit
+  useEffect(() => {
+    if (!fullscreen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreen(null);
+    };
+    window.addEventListener('keydown', esc);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', esc);
+    };
+  }, [fullscreen]);
+
+  const openLive = useCallback(async () => {
+    try {
+      const url = await buildMermaidLiveUrl(chart.trim());
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch {
+      window.open('https://mermaid.live/', '_blank', 'noopener,noreferrer');
+    }
+  }, [chart]);
+
+  return (
+    <div style={{ width: '100%', position: 'relative' }}>
+      <DiagramSurface
+        chart={chart}
+        theme={theme}
+        onError={onError}
+        view={inline}
+        setView={setInline}
+        extraActions={
+          <>
+            <button
+              onClick={() =>
+                setFullscreen(
+                  inline
+                    ? { ...inline, manualZoom: null, manualPan: null }
+                    : { autoZoom: 1, manualZoom: null, manualPan: null },
+                )
+              }
+              className="secondary-btn-xs"
+              title="Fullscreen"
+              style={{ fontSize: '0.8rem', padding: '0.3rem 0.55rem' }}
+            >
+              ⛶
+            </button>
+            <button
+              onClick={openLive}
+              className="secondary-btn-xs"
+              title="Open in Mermaid Live Editor"
+              style={{ fontSize: '0.72rem', padding: '0.3rem 0.55rem' }}
+            >
+              ▶️ Edit
+            </button>
+          </>
+        }
+      />
+
+      {fullscreen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: '#0b0f19',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '2rem',
+          }}
+        >
+          <button
+            onClick={() => setFullscreen(null)}
+            style={{
+              position: 'absolute',
+              top: '1rem',
+              right: '1rem',
+              zIndex: 1002,
+              background: 'rgba(255,255,255,0.1)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '8px',
+              padding: '0.5rem 0.9rem',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+            }}
+          >
+            ✕ Close (Esc)
+          </button>
+          <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+            <DiagramSurface
+              chart={chart}
+              theme={theme}
+              onError={onError}
+              view={fullscreen}
+              setView={setFullscreen}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

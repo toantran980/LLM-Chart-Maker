@@ -13,6 +13,8 @@ Strategic expansion ideas for the product.
 - [ ] Create user profile management
 - [ ] Add session management and security
 - [ ] Implement OAuth providers (Google, GitHub)
+- [ ] Add email verification / password reset flow
+- [ ] Add "Continue as guest" mode so users aren't forced to sign up
 
 ---
 
@@ -23,6 +25,9 @@ Strategic expansion ideas for the product.
 - [ ] Display usage statistics
 - [ ] Add error rate monitoring
 - [ ] Create admin dashboard for analytics
+- [ ] Track diagram **type + direction** distribution to see which configs users pick most
+- [X] Track **fallback-mode hit rate** (backend `metrics.fallbackCount` — persists in-memory and is surfaced via `/api/health`)
+- [ ] Measure per-request **generation latency + LLM cost** for cost controls (latency already surfaced per-endpoint via `metrics`)
 
 ---
 
@@ -33,6 +38,9 @@ Strategic expansion ideas for the product.
 - [ ] Create interactive API testing interface
 - [ ] Document authentication requirements
 - [ ] Add rate limiting documentation
+- [X] Auto-generate an **OpenAPI spec** from the existing Express route handlers (`GET /api/openapi.json`)
+- [X] Add request/response examples for each endpoint (`/api/diagram`, `/refine`, `/fix`, `/describe`, `/suggest-type`)
+- [X] Serve interactive **Swagger UI** at `GET /api/docs` + document the `x-api-key` auth scheme and structured error schema
 
 ---
 
@@ -43,6 +51,10 @@ Strategic expansion ideas for the product.
 - [ ] Implement error alerting
 - [ ] Create error reporting dashboard
 - [ ] Add user feedback mechanisms
+- [X] Separate **LLM provider errors** (timeouts, rate limits, bad key) from general backend bugs (distinct `LLM_*` codes + `records`)
+- [X] Track **fallback-mode hit rate** when the LLM fails and the local parser kicks in (`metrics.fallbackCount`)
+- [X] Upgrade `/api/health` to surface last-error + per-endpoint counts + fallback count (`metrics`)
+- [ ] Report **Mermaid render failures** (syntax errors in generated code) — the biggest user-facing failure signal, currently only a client-side error box
 
 ---
 
@@ -172,6 +184,39 @@ Strategic expansion ideas for the product.
 
 ---
 
+## 🖥️ Diagram UX / Rendering Ideas
+
+> Smaller, pure-frontend ideas around viewing, exporting, and interacting with diagrams.
+> These were previously listed in the roadmap's spark section.
+
+### 17. Clipboard & Export UX
+
+- [X] Copy diagram as Mermaid text ("📋 Copy Code" in `Result.tsx`)
+- [ ] Copy SVG **markup** directly (open in editor / save as `.svg` without a download)
+- [ ] "Copy markdown `data:` embed URL" (already covered by `</>` Embed)
+
+### 18. Fullscreen & Live Editor
+
+- [X] Fullscreen / presentation mode (`⛶` overlay — own pan/zoom, `Esc` to exit, fit-to-screen re-runs)
+- [X] "Open in Mermaid Live Editor" deep-link button (`buildMermaidLiveUrl`)
+
+### 19. Auto-layout & interaction
+
+- [X] Direction-aware auto-layout heuristics (`normalizeFlowchartDirection` nudges wide `LR`/`RL` → `TD`)
+- [X] Keyboard zoom shortcuts (`+`/`−`/`0`) + mouse-wheel zoom
+- [ ] Auto diagram caption / title (LLM returns a title → SVG `<title>` + visible caption + history)
+- [ ] Diagram diff / version compare between history snapshots
+
+### 20. Accessibility & polish
+
+- [X] Theme persistence via `localStorage` (`loadSavedTheme`/`saveTheme`)
+- [ ] Add `role="img"` + `aria-label` on the SVG wrapper
+- [ ] Allow keyboard focus + arrow-key panning
+- [ ] Honor `prefers-reduced-motion` (disable zoom/pan transition)
+- [ ] Error recovery suggestion chips (one-click "Simplify" / "Use TD" / "Fewer nodes")
+
+---
+
 ## 🎯 Idea Groups
 
 ### Foundation
@@ -201,5 +246,12 @@ Strategic expansion ideas for the product.
 14. Enterprise Features
 15. Integration Ecosystem
 16. Advanced AI Features
+
+### Diagram UX / Rendering
+
+17. Clipboard & Export UX
+18. Fullscreen & Live Editor
+19. Auto-layout & interaction
+20. Accessibility & polish
 
 ---

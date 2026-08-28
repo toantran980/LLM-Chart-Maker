@@ -12,6 +12,7 @@ import DiagramHistory from './components/DiagramHistory';
 import PDFViewer from './PDFViewer';
 import { saveHistoryEntry, type HistoryEntry } from './utils/history';
 import { useBackendHealth } from './hooks/useBackendHealth';
+import { normalizeFlowchartDirection, loadSavedTheme, saveTheme } from './utils/diagram';
 
 import type { DiagramType, DiagramSuggestionResponse } from '@shared/types';
 
@@ -25,7 +26,7 @@ export default function App() {
   const [text, setText] = useState<string>('');
   const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
   const [direction, setDirection] = useState<string>('auto');
-  const [theme, setTheme] = useState<string>('base');
+  const [theme, setTheme] = useState<string>(() => loadSavedTheme() ?? 'base');
   const [mermaid, setMermaid] = useState<string>('');
   const [historyRefresh, setHistoryRefresh] = useState(0);
   const fallbackMode = useBackendHealth();
@@ -56,6 +57,11 @@ export default function App() {
     document.body.classList.toggle('dark-mode', darkMode);
   }, [darkMode]);
 
+  // Persist theme choice across sessions
+  useEffect(() => {
+    saveTheme(theme);
+  }, [theme]);
+
   function handleFileLoaded(content: string, file: File) {
     setUploadedFile(file);
     if (file.type !== 'application/pdf') {
@@ -77,9 +83,10 @@ export default function App() {
     try {
       const data = await postDiagram({ ...payload, text: trimmedText });
       if (data?.mermaid?.trim()) {
-        setMermaid(data.mermaid);
+        const normalized = normalizeFlowchartDirection(data.mermaid);
+        setMermaid(normalized);
         saveHistoryEntry({
-          mermaid: data.mermaid,
+          mermaid: normalized,
           diagramType: payload.diagramType,
           direction: payload.direction || direction,
           theme,
