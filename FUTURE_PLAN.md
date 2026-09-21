@@ -213,17 +213,19 @@ not a prerequisite for new features.
 - [X] Add observability: structured logs, error tracking, and alerts for backend failures
 - [X] Extend existing CI with dependency/security checks
 
+### 21. Real Shareable URLs & Neon Postgres Persistence
+
+- [X] Connect Neon Postgres via `@neondatabase/serverless` with schema auto-init
+- [X] Add `POST /api/diagrams/share` and `GET /api/diagrams/:id` routes
+- [X] Add frontend "🔗 Share" button to copy direct links (`?share=<id>`)
+- [X] Auto-restore diagrams on load from URL param and sync to browser history
+- [X] Implement graceful fallback to in-memory store and `localStorage` if DB is offline
+
 ---
 
 ## 🔴 Hard / Deferred — Set Aside for Now
 
 > Requires new infrastructure or significant architecture changes. Not worth it yet.
-
-### Real Shareable URLs
-
-**Why hard:** Needs a database (Postgres/Redis) to store diagrams by ID, a `GET /api/diagram/:id`
-endpoint, and frontend routing changes to load from URL params.
-**Revisit when:** You add a backend database for any other reason.
 
 ### User Accounts & Auth
 

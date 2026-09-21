@@ -279,5 +279,36 @@ describe('API', () => {
     expect(res.status).toBe(200);
     expect(res.body.mermaid).toContain('flowchart TD');
   });
+
+  it('POST /api/diagrams/share saves a diagram and GET /api/diagrams/:id retrieves it', async () => {
+    const app = createApp();
+
+    const shareRes = await request(app)
+      .post('/api/diagrams/share')
+      .send({
+        title: 'Architecture Overview',
+        mermaid: 'graph TD; A-->B;',
+        diagramType: 'flowchart',
+        direction: 'TD',
+        theme: 'dark',
+      });
+
+    expect(shareRes.status).toBe(200);
+    expect(shareRes.body.id).toBeDefined();
+    expect(shareRes.body.title).toBe('Architecture Overview');
+    expect(shareRes.body.mermaid).toBe('graph TD; A-->B;');
+
+    const getRes = await request(app).get(`/api/diagrams/${shareRes.body.id}`);
+    expect(getRes.status).toBe(200);
+    expect(getRes.body.id).toBe(shareRes.body.id);
+    expect(getRes.body.title).toBe('Architecture Overview');
+    expect(getRes.body.mermaid).toBe('graph TD; A-->B;');
+  });
+
+  it('GET /api/diagrams/:id returns 404 for unknown diagram', async () => {
+    const app = createApp();
+    const res = await request(app).get('/api/diagrams/non-existent-id');
+    expect(res.status).toBe(404);
+  });
 });
 

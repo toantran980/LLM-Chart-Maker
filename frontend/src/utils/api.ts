@@ -1,4 +1,9 @@
-import type { DiagramType, DiagramSuggestionResponse } from '@shared/types';
+import type {
+  DiagramType,
+  DiagramSuggestionResponse,
+  ShareDiagramRequest,
+  SharedDiagramResponse,
+} from '@shared/types';
 
 export function getApiBase(): string {
   return (import.meta.env.VITE_API_BASE ?? '').replace(/\/$/, '');
@@ -49,4 +54,21 @@ export function postDescribe(mermaid: string) {
 
 export function postSuggestType(text: string): Promise<DiagramSuggestionResponse> {
   return postJson('/api/suggest-type', { text });
+}
+
+export function postShareDiagram(payload: ShareDiagramRequest): Promise<SharedDiagramResponse> {
+  return postJson('/api/diagrams/share', payload);
+}
+
+export async function fetchSharedDiagram(id: string): Promise<SharedDiagramResponse> {
+  const base = getApiBase();
+  const res = await fetch(`${base}/api/diagrams/${encodeURIComponent(id)}`, {
+    headers: getApiHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = typeof data.error === 'string' ? data.error : `Failed to load diagram (${res.status})`;
+    throw new Error(message);
+  }
+  return data;
 }

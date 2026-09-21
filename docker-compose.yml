@@ -12,6 +12,10 @@ services:
       - UPSTASH_REDIS_REST_URL=${UPSTASH_REDIS_REST_URL:-}
       - UPSTASH_REDIS_REST_TOKEN=${UPSTASH_REDIS_REST_TOKEN:-}
       - SENTRY_DSN=${SENTRY_DSN:-}
+      - DATABASE_URL=${DATABASE_URL:-}
+      - DB_URL=${DB_URL:-}
+      - DB_USER=${DB_USER:-}
+      - DB_PSWD=${DB_PSWD:-}
     restart: unless-stopped
 
   frontend:

@@ -19,6 +19,7 @@ import {
   validateRefineRequest,
   validateSuggestRequest,
 } from './middleware/validate';
+import { isDatabaseConfigured, saveDiagram, getDiagram } from './db';
 
 export function createApp() {
   const app = express();
@@ -65,6 +66,7 @@ export function createApp() {
     res.json({
       ok: true,
       fallback,
+      database: isDatabaseConfigured(),
       uptime: Math.floor(process.uptime()),
       memory: {
         rss: mem.rss,
@@ -159,6 +161,39 @@ export function createApp() {
       const { text } = req.body;
       const suggestion = await suggestDiagramType(text);
       res.json(suggestion);
+    }),
+  );
+
+  app.post(
+    '/api/diagrams/share',
+    asyncHandler(async (req, res) => {
+      const { mermaid, diagramType, title, direction, theme, sourceText } = req.body;
+      if (!mermaid || typeof mermaid !== 'string') {
+        res.status(400).json({ error: 'Missing or invalid "mermaid" code' });
+        return;
+      }
+      const record = await saveDiagram({
+        title,
+        mermaid,
+        diagramType: diagramType || 'flowchart',
+        direction,
+        theme,
+        sourceText,
+      });
+      res.json(record);
+    }),
+  );
+
+  app.get(
+    '/api/diagrams/:id',
+    asyncHandler(async (req, res) => {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const diagram = await getDiagram(id);
+      if (!diagram) {
+        res.status(404).json({ error: 'Diagram not found' });
+        return;
+      }
+      res.json(diagram);
     }),
   );
 

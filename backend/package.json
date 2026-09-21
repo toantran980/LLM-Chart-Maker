@@ -9,6 +9,7 @@
   },
   "main": "dist/index.js",
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@sentry/node": "^10.71.0",
     "@types/compression": "^1.8.1",
     "@upstash/ratelimit": "^2.0.8",

@@ -19,6 +19,8 @@
     "frontend:test": "cd frontend && npm test"
   },
   "devDependencies": {
+    "@neon/config": "^1.7.2",
+    "neon": "^5.0.0",
     "npm-run-all": "^4.1.5"
   },
   "dependencies": {

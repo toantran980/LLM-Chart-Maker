@@ -10,6 +10,7 @@ Live App: https://llm-chart-maker-frontend.vercel.app/
 [![Mermaid](https://img.shields.io/badge/Mermaid-FF3670?style=for-the-badge&logo=mermaid&logoColor=white)](https://mermaid.js.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+[![Neon](https://img.shields.io/badge/Neon_Postgres-00E599?style=for-the-badge&logo=neon&logoColor=black)](https://neon.tech/)
 [![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/features/actions)
@@ -19,7 +20,8 @@ Live App: https://llm-chart-maker-frontend.vercel.app/
 ## Tech stack
 
 - **Frontend:** React 19, TypeScript, Vite, Mermaid.js, PDF.js, Vitest, ESLint
-- **Backend:** Node.js, Express, TypeScript, Vitest, Axios
+- **Backend:** Node.js, Express, TypeScript, Vitest, Axios, `@neondatabase/serverless`
+- **Database:** Neon Postgres (Lakebase Postgres) for persistent diagrams and shareable links (with local storage & in-memory fallback)
 - **Infrastructure:** npm workspaces, Docker Compose, Nginx, GitHub Actions CI, Vercel (frontend), Render (backend)
 - **AI:** OpenAI-compatible LLM integration with a local parser fallback
 - **Production:** Helmet, compression, request IDs, structured logging, rate limiting (Upstash Redis or in-memory)
@@ -34,6 +36,7 @@ Live App: https://llm-chart-maker-frontend.vercel.app/
 - Auto-suggest the best diagram type from your input text
 - Refine a diagram with natural-language instructions and request a plain-language description
 - Edit Mermaid source in the app, then copy the code or an embeddable SVG snippet
+- Share diagrams via unique URLs (`?share=<id>`) backed by Neon Postgres
 - Export rendered diagrams as SVG or PNG; zoom and pan the canvas; select one of five Mermaid themes
 - Recover from Mermaid render errors with an automatic fix attempt and a manual retry
 - Restore the most recent 20 diagrams from browser-local history
@@ -43,7 +46,7 @@ Live App: https://llm-chart-maker-frontend.vercel.app/
 - `Ctrl/Cmd+Enter` — generate a diagram from all editor text
 - `Ctrl/Cmd+Shift+Enter` — generate from the current selection, highlights, or editor text fallback
 
-History is stored only in the current browser's local storage. It is not synced across devices or user accounts.
+Diagrams can be shared via direct link (`?share=<id>`) backed by Neon Postgres. Browser history is stored locally in `localStorage`, maintaining seamless offline fallback if the database is unconfigured.
 
 ---
 
@@ -107,6 +110,8 @@ OPENAI_API_KEY=your_openai_api_key_here
 | `API_SECRET` | Backend (Render) | Require `X-API-Key` on all `/api/*` routes |
 | `VITE_API_SECRET` | Frontend (Vercel) | Same value as `API_SECRET`; sent with API requests |
 | `ALLOWED_ORIGIN` | Backend | Production frontend URL for CORS |
+| `DATABASE_URL` | Backend | Full Neon Postgres connection string |
+| `DB_URL`, `DB_USER`, `DB_PSWD` | Backend | Alternative separate Neon DB connection credentials |
 | `UPSTASH_REDIS_REST_URL` | Backend | Shared rate-limit store (falls back to in-memory if unset) |
 | `UPSTASH_REDIS_REST_TOKEN` | Backend | Upstash REST token |
 | `SENTRY_DSN` | Backend | Error tracking and alerts |
@@ -168,12 +173,14 @@ Visit `http://localhost` in your browser. Provide `OPENAI_API_KEY` in the root `
 
 | Endpoint                  | Purpose                                                           |
 | ------------------------- | ----------------------------------------------------------------- |
-| `GET /health`            | Reports availability, fallback mode, uptime, and memory usage.    |
+| `GET /health`            | Reports availability, fallback mode, database status, uptime, etc. |
 | `POST /api/diagram`      | Generates a Mermaid diagram from source text.                     |
 | `POST /api/refine`       | Refines an existing diagram from an instruction.                  |
 | `POST /api/fix`          | Attempts to repair Mermaid code after a render error.             |
 | `POST /api/describe`     | Returns a plain-language description of Mermaid code.             |
 | `POST /api/suggest-type` | Recommends the best diagram type for a given input text.          |
+| `POST /api/diagrams/share` | Saves a diagram to Neon Postgres and returns a shareable link.   |
+| `GET /api/diagrams/:id`  | Retrieves a saved shared diagram by ID.                           |
 
 LLM routes validate request bodies and enforce size limits. Default rate limit: 20 requests per IP or API key per minute. Configure `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS` for a different policy. Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` for shared rate limiting across instances.
 

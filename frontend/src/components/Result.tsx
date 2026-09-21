@@ -2,13 +2,17 @@ import { useRef, useState } from 'react';
 import Mermaid from '../Mermaid';
 import CodeEditor from './CodeEditor';
 import { extractMermaidCode } from '../utils/mermaid';
-import { postDescribe, postFix } from '../utils/api';
+import type { DiagramType } from '@shared/types';
+import { postDescribe, postFix, postShareDiagram } from '../utils/api';
 
 interface Props {
   mermaid: string;
   setMermaid: (val: string) => void;
   theme?: string;
   setTheme?: (theme: string) => void;
+  diagramType?: DiagramType;
+  direction?: string;
+  sourceText?: string;
 }
 
 function DiagramWithFix({ code, theme, onFixed }: { code: string; theme: string; onFixed: (mermaid: string) => void }) {
@@ -63,7 +67,15 @@ function DiagramWithFix({ code, theme, onFixed }: { code: string; theme: string;
   );
 }
 
-export default function Result({ mermaid, setMermaid, theme: propTheme, setTheme: propSetTheme }: Props) {
+export default function Result({
+  mermaid,
+  setMermaid,
+  theme: propTheme,
+  setTheme: propSetTheme,
+  diagramType,
+  direction,
+  sourceText,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [internalTheme, setInternalTheme] = useState('base');
@@ -72,6 +84,8 @@ export default function Result({ mermaid, setMermaid, theme: propTheme, setTheme
   const [showCode, setShowCode] = useState(false);
   const [description, setDescription] = useState('');
   const [loadingDesc, setLoadingDesc] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [sharedUrl, setSharedUrl] = useState<string | null>(null);
 
   if (!mermaid) return null;
   const code = extractMermaidCode(mermaid);
@@ -81,6 +95,28 @@ export default function Result({ mermaid, setMermaid, theme: propTheme, setTheme
   const serializeRenderedSvg = () => {
     const svg = getRenderedSvg();
     return svg ? new XMLSerializer().serializeToString(svg) : null;
+  };
+
+  const handleShare = async () => {
+    setSharing(true);
+    try {
+      const record = await postShareDiagram({
+        mermaid: code,
+        diagramType: diagramType || 'flowchart',
+        direction,
+        theme,
+        sourceText,
+      });
+      const url = `${window.location.origin}${window.location.pathname}?share=${encodeURIComponent(record.id)}`;
+      await navigator.clipboard.writeText(url);
+      setSharedUrl(url);
+      setTimeout(() => setSharedUrl(null), 4000);
+    } catch (err) {
+      console.error('Failed to share diagram', err);
+      alert('Could not share diagram to cloud; keeping local copy.');
+    } finally {
+      setSharing(false);
+    }
   };
 
   const handleCopy = () => {
@@ -201,6 +237,9 @@ export default function Result({ mermaid, setMermaid, theme: propTheme, setTheme
           </button>
           <button className="action-btn" onClick={handleDownloadPNG}>
             🖼️ PNG
+          </button>
+          <button className="action-btn" onClick={handleShare} disabled={sharing}>
+            {sharing ? '⏳ Sharing...' : sharedUrl ? '✅ Link Copied!' : '🔗 Share'}
           </button>
         </div>
       </div>

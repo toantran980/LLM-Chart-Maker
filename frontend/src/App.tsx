@@ -2,7 +2,7 @@ import './App.css';
 import './mermaid-overrides.css';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import useSelection from './hooks/useSelection';
-import { postDiagram, postRefine, postSuggestType } from './utils/api';
+import { postDiagram, postRefine, postSuggestType, fetchSharedDiagram } from './utils/api';
 import { moveCaretToEnd } from './utils/dom';
 import EditorArea from './components/EditorArea';
 import Controls from './components/Controls';
@@ -61,6 +61,38 @@ export default function App() {
   useEffect(() => {
     saveTheme(theme);
   }, [theme]);
+
+  // Check for shared diagram in URL (?share=<id>)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shareId = params.get('share');
+    if (shareId) {
+      fetchSharedDiagram(shareId)
+        .then((data) => {
+          if (data?.mermaid) {
+            setMermaid(data.mermaid);
+            if (data.diagramType) setDiagramType(data.diagramType);
+            if (data.direction) setDirection(data.direction);
+            if (data.theme) setTheme(data.theme);
+            if (data.sourceText) setText(data.sourceText);
+            saveHistoryEntry({
+              id: data.id,
+              title: data.title || undefined,
+              mermaid: data.mermaid,
+              diagramType: data.diagramType,
+              direction: data.direction || undefined,
+              theme: data.theme || undefined,
+              sourceText: data.sourceText || undefined,
+            });
+            setHistoryRefresh((prev) => prev + 1);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load shared diagram:', err);
+          setRequestError('Shared diagram could not be loaded.');
+        });
+    }
+  }, []);
 
   function handleFileLoaded(content: string, file: File) {
     setUploadedFile(file);
@@ -302,7 +334,15 @@ export default function App() {
           <button type="button" className="request-error-dismiss" onClick={() => setRequestError(null)} aria-label="Dismiss error">×</button>
         </div>
       )}
-      <Result mermaid={mermaid} setMermaid={setMermaid} theme={theme} setTheme={setTheme} />
+      <Result
+        mermaid={mermaid}
+        setMermaid={setMermaid}
+        theme={theme}
+        setTheme={setTheme}
+        diagramType={diagramType}
+        direction={direction}
+        sourceText={text}
+      />
       <DiagramHistory
         refreshTrigger={historyRefresh}
         onRestore={handleRestoreHistory}
