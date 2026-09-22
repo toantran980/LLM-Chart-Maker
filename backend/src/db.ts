@@ -17,32 +17,11 @@ export interface SharedDiagram {
 const inMemoryDiagrams = new Map<string, SharedDiagram>();
 
 export function getDatabaseUrl(): string | null {
-  const { DATABASE_URL, DB_URL, DB_USER, DB_PSWD } = process.env;
-
-  if (DATABASE_URL && DATABASE_URL.trim()) {
-    return DATABASE_URL.trim();
+  const { POSTGRES_URL } = process.env;
+  if (POSTGRES_URL && POSTGRES_URL.trim()) {
+    return POSTGRES_URL.trim();
   }
-
-  if (!DB_URL || !DB_URL.trim()) {
-    return null;
-  }
-
-  const trimmedDbUrl = DB_URL.trim();
-
-  if (DB_USER && DB_PSWD) {
-    try {
-      const parsed = new URL(trimmedDbUrl);
-      parsed.username = encodeURIComponent(DB_USER.trim());
-      parsed.password = encodeURIComponent(DB_PSWD.trim());
-      return parsed.toString();
-    } catch {
-      // If URL parsing fails, format directly
-      const cleanUrl = trimmedDbUrl.replace(/^postgresql:\/\//i, '');
-      return `postgresql://${encodeURIComponent(DB_USER.trim())}:${encodeURIComponent(DB_PSWD.trim())}@${cleanUrl}`;
-    }
-  }
-
-  return trimmedDbUrl;
+  return null;
 }
 
 let sqlClient: ReturnType<typeof neon> | null = null;

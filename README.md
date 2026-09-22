@@ -107,18 +107,17 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 | Variable | Where | Purpose |
 | -------- | ----- | ------- |
-| `API_SECRET` | Backend (Render) | Require `X-API-Key` on all `/api/*` routes |
-| `VITE_API_SECRET` | Frontend (Vercel) | Same value as `API_SECRET`; sent with API requests |
+| `APP_API_KEY` | Backend (Render) | Require `X-API-Key` on all `/api/*` routes |
+| `VITE_APP_API_KEY` | Frontend (Vercel) | Same value as `APP_API_KEY`; sent with API requests |
 | `ALLOWED_ORIGIN` | Backend | Production frontend URL for CORS |
 | `DATABASE_URL` | Backend | Full Neon Postgres connection string |
-| `DB_URL`, `DB_USER`, `DB_PSWD` | Backend | Alternative separate Neon DB connection credentials |
 | `UPSTASH_REDIS_REST_URL` | Backend | Shared rate-limit store (falls back to in-memory if unset) |
 | `UPSTASH_REDIS_REST_TOKEN` | Backend | Upstash REST token |
 | `SENTRY_DSN` | Backend | Error tracking and alerts |
 | `RATE_LIMIT_MAX` | Backend | Max LLM requests per window (default: 20) |
 | `RATE_LIMIT_WINDOW_MS` | Backend | Rate-limit window in ms (default: 60000) |
 
-When `API_SECRET` is unset, LLM routes stay open for local development. Set the same secret on both Render and Vercel before exposing the live app broadly.
+When `APP_API_KEY` is unset, LLM routes stay open for local development. Set the same secret on both Render and Vercel before exposing the live app broadly.
 
 ```bash
 npm run dev

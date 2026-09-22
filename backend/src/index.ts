@@ -14,7 +14,7 @@ const server = app.listen(PORT, () => {
   if (!process.env.OPENAI_API_KEY) {
     log('warn', 'No OPENAI_API_KEY found — running in fallback mode (local parser)');
   }
-  if (process.env.API_SECRET) {
+  if (process.env.APP_API_KEY) {
     log('info', 'API access control enabled');
   }
   if (process.env.UPSTASH_REDIS_REST_URL) {

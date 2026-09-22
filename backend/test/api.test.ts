@@ -11,7 +11,7 @@ describe('API', () => {
   beforeEach(() => {
     resetRateLimitStore();
     process.env.RATE_LIMIT_MAX = '100';
-    delete process.env.API_SECRET;
+    delete process.env.APP_API_KEY;
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
   });
@@ -21,7 +21,7 @@ describe('API', () => {
     resetRateLimitStore();
     delete process.env.RATE_LIMIT_MAX;
     delete process.env.RATE_LIMIT_WINDOW_MS;
-    delete process.env.API_SECRET;
+    delete process.env.APP_API_KEY;
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
   });
@@ -255,7 +255,7 @@ describe('API', () => {
   });
 
   it('POST /api/diagram rejects requests without API secret when configured', async () => {
-    process.env.API_SECRET = 'test-secret';
+    process.env.APP_API_KEY = 'test-secret';
     const app = createApp();
 
     const res = await request(app)
@@ -267,7 +267,7 @@ describe('API', () => {
   });
 
   it('POST /api/diagram accepts valid API secret', async () => {
-    process.env.API_SECRET = 'test-secret';
+    process.env.APP_API_KEY = 'test-secret';
     const app = createApp();
     vi.spyOn(diagramModule, 'generateDiagram').mockResolvedValue('```mermaid\nflowchart TD\nA --> B\n```');
 

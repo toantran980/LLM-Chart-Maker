@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express';
 import { ApiError } from '../errors';
 
 export function requireApiSecret(): RequestHandler {
-  const secret = process.env.API_SECRET?.trim();
+  const secret = process.env.APP_API_KEY?.trim();
   if (!secret) {
     return (_req, _res, next) => next();
   }

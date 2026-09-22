@@ -13,7 +13,7 @@ export type DiagramPayload = { text: string; diagramType: DiagramType; direction
 
 function getApiHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const apiSecret = import.meta.env.VITE_API_SECRET;
+  const apiSecret = import.meta.env.VITE_APP_API_KEY;
   if (apiSecret) headers['X-API-Key'] = apiSecret;
   return headers;
 }
