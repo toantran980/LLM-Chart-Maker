@@ -55,7 +55,7 @@ describe('API', () => {
     const app = createApp();
     const res = await request(app).get('/api/openapi.json');
     expect(res.status).toBe(200);
-    expect(res.body.openapi).toBe('3.0.3');
+    expect(res.body.openapi).toBe('3.2.1');
     expect(Object.keys(res.body.paths)).toContain('/api/diagram');
     expect(res.body.components.schemas.DiagramRequest).toBeDefined();
   });
