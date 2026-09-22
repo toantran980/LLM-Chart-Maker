@@ -1,5 +1,5 @@
 export const openApiSpec = {
-  openapi: '3.0.3',
+  openapi: '3.2.1',
   info: {
     title: 'LLM Chart Maker API',
     version: '1.0.0',
