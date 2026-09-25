@@ -82,8 +82,7 @@ function sanitizeFlowchartLine(line: string): string {
     if (depth === 0) {
       const content = line.slice(contentStart, j - 1);
       if (!content.startsWith('"') && needsQuoting(content)) {
-        result +=
-          id + openChar + '"' + escapeDoubleQuotes(content) + '"' + closeChar;
+        result += id + openChar + '"' + escapeDoubleQuotes(content) + '"' + closeChar;
         i = j;
         continue;
       }

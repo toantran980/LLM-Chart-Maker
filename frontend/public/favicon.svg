@@ -1,23 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
   <!-- Background rounded square -->
   <rect width="32" height="32" rx="8" fill="#0f172a"/>
-  <!-- Flowchart nodes -->
+
+  <!-- Top terminal -->
   <rect x="11" y="3" width="10" height="6" rx="2" fill="#6366f1"/>
-  <!-- Arrow down from top node -->
-  <line x1="16" y1="9" x2="16" y2="13" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round"/>
-  <polygon points="16,14.5 14.5,12.5 17.5,12.5" fill="#6366f1"/>
+
+  <!-- Arrow: top terminal -> diamond -->
+  <line x1="16" y1="9.5" x2="16" y2="13" stroke="#818cf8" stroke-width="1.5" stroke-linecap="round"/>
+  <polygon points="16,14.5 14.3,12 17.7,12" fill="#818cf8"/>
+
   <!-- Diamond decision node -->
   <polygon points="16,14.5 21,19 16,23.5 11,19" fill="#818cf8"/>
-  <!-- Arrow left -->
-  <line x1="11" y1="19" x2="6" y2="19" stroke="#818cf8" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Arrow: diamond -> left terminal -->
+  <line x1="10.3" y1="19" x2="6.5" y2="19" stroke="#a5b4fc" stroke-width="1.5" stroke-linecap="round"/>
+  <polygon points="5,19 7,17.8 7,20.2" fill="#a5b4fc"/>
   <!-- Left terminal -->
-  <rect x="2" y="16" width="4" height="6" rx="1.5" fill="#a5b4fc"/>
-  <!-- Arrow right -->
-  <line x1="21" y1="19" x2="26" y2="19" stroke="#818cf8" stroke-width="1.5" stroke-linecap="round"/>
+  <rect x="1" y="16" width="4.2" height="6" rx="1.5" fill="#a5b4fc"/>
+
+  <!-- Arrow: diamond -> right terminal -->
+  <line x1="21.7" y1="19" x2="25.5" y2="19" stroke="#a5b4fc" stroke-width="1.5" stroke-linecap="round"/>
+  <polygon points="27,19 25,17.8 25,20.2" fill="#a5b4fc"/>
   <!-- Right terminal -->
-  <rect x="26" y="16" width="4" height="6" rx="1.5" fill="#a5b4fc"/>
-  <!-- Arrow down from diamond -->
-  <line x1="16" y1="23.5" x2="16" y2="27" stroke="#818cf8" stroke-width="1.5" stroke-linecap="round"/>
+  <rect x="26.8" y="16" width="4.2" height="6" rx="1.5" fill="#a5b4fc"/>
+
+  <!-- Arrow: diamond -> bottom terminal -->
+  <line x1="16" y1="24" x2="16" y2="26.5" stroke="#818cf8" stroke-width="1.5" stroke-linecap="round"/>
+  <polygon points="16,28 14.3,25.5 17.7,25.5" fill="#818cf8"/>
   <!-- Bottom terminal -->
-  <rect x="11" y="27" width="10" height="4" rx="2" fill="#6366f1"/>
+  <rect x="11" y="28" width="10" height="4" rx="2" fill="#6366f1"/>
 </svg>
