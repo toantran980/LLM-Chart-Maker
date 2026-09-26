@@ -51,7 +51,7 @@ export function fallbackDiagram(req: DiagramRequest & { direction?: string }): s
     let lastId: string | null = null;
 
     lines.forEach((line) => {
-      const m = line.match(/^if (.+?), (then|)(.+?)(?:, else (.+))?\.?$/i);
+      const m = line.match(/^if\s+(.+?),\s*(then\s*)?(.+?)(?:,\s*else\s*(.+))?\.?$/i);
       if (m) {
         const cond = m[1].trim();
         const thenPart = m[3].trim();
