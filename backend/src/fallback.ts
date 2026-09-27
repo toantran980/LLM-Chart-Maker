@@ -115,7 +115,9 @@ export function fallbackSuggestDiagramType(text: string): { suggestedType: impor
   }
 
   // ER Diagram: database entities, relations, primary/foreign keys, attributes
-  if (/(entity|table|foreign key|primary key|one-to-many|many-to-many|database schema|relational|attributes?)/i.test(lower) || /([a-z0-9_]+\s*\|\-\-o\{|[a-z0-9_]+\s*\}\|)/i.test(lower)) {
+  const erKeywords = /\b(entity|table|foreign key|primary key|one-to-many|many-to-many|database schema|relational|attributes?)\b/i;
+  const erSyntax = /[a-z0-9_]+\s*[\|]{1,2}--o\{|[a-z0-9_]+\s*\}\|/i;
+  if (erKeywords.test(lower) || erSyntax.test(lower)) {
     return {
       suggestedType: 'er',
       reason: 'Detected database entities, relations, or schema attributes.',
@@ -124,7 +126,10 @@ export function fallbackSuggestDiagramType(text: string): { suggestedType: impor
   }
 
   // Git Graph: git branch, commit, merge, checkout, rebase, tag
-  if (/(git\s*graph|git\s*branch|commit\s*id|pull request|rebase|cherry-pick|fast-forward)/i.test(lower) || (/\b(commit|branch|merge|checkout)\b/i.test(lower) && /\b(main|master|feature|develop|hotfix)\b/i.test(lower))) {
+  const gitKeywords = /\b(git\s*graph|git\s*branch|commit\s*id|pull request|rebase|cherry-pick|fast-forward)\b/i;
+  const gitActions = /\b(commit|branch|merge|checkout)\b/i;
+  const gitBranches = /\b(main|master|feature|develop|hotfix)\b/i;
+  if (gitKeywords.test(lower) || (gitActions.test(lower) && gitBranches.test(lower))) {
     return {
       suggestedType: 'gitgraph',
       reason: 'Detected Git repository branching, commits, or merge workflows.',
@@ -133,7 +138,9 @@ export function fallbackSuggestDiagramType(text: string): { suggestedType: impor
   }
 
   // Rules / Decision: if/then/else, policies, business rules
-  if (/(if\s+.+?,\s*(then|else)|rule\s*\d|business rule|eligibility criteria|conditional logic)/i.test(lower) || (lower.includes('if ') && lower.includes(' then '))) {
+  const ruleKeywords = /\b(rule\s*\d|business rule|eligibility criteria|conditional logic)\b/i;
+  const ifThenElse = /if\s+[^,]+,\s*(then|else)\b/i;
+  if (ruleKeywords.test(lower) || ifThenElse.test(lower) || (lower.includes('if ') && lower.includes(' then '))) {
     return {
       suggestedType: 'rules',
       reason: 'Detected conditional logic, decision criteria, or business rules.',

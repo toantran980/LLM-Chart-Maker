@@ -181,7 +181,7 @@ async function renderMermaid(
     }
   });
 
-  const uid = 'm' + Math.random().toString(36).substring(2, 10);
+  const uid = 'm' + crypto.randomUUID().replace(/-/g, '').substring(0, 8);
   const { svg } = await mermaid.render(uid, def);
   containerEl.innerHTML = svg;
 
