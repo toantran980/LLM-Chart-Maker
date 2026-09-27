@@ -51,7 +51,7 @@ export function fallbackDiagram(req: DiagramRequest & { direction?: string }): s
     let lastId: string | null = null;
 
     lines.forEach((line) => {
-      const m = line.match(/^if\s+(.+?),\s*(then\s*)?(.+?)(?:,\s*else\s*(.+))?\.?$/i);
+      const m = line.match(/^if\s+(.{1,200}?),\s*(then\s*)?(.{1,200}?)(?:,\s*else\s*(.{1,200}?))?\.?$/i);
       if (m) {
         const cond = m[1].trim();
         const thenPart = m[3].trim();
@@ -116,7 +116,7 @@ export function fallbackSuggestDiagramType(text: string): { suggestedType: impor
 
   // ER Diagram: database entities, relations, primary/foreign keys, attributes
   const erKeywords = /\b(entity|table|foreign key|primary key|one-to-many|many-to-many|database schema|relational|attributes?)\b/i;
-  const erSyntax = /[a-z0-9_]+\s*[\|]{1,2}--o\{|[a-z0-9_]+\s*\}\|/i;
+  const erSyntax = /[a-z0-9_]{1,50}\s*\|{1,2}--o\{|[a-z0-9_]{1,50}\s*\}\|/i;
   if (erKeywords.test(lower) || erSyntax.test(lower)) {
     return {
       suggestedType: 'er',
