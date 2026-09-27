@@ -139,7 +139,7 @@ export function fallbackSuggestDiagramType(text: string): { suggestedType: impor
 
   // Rules / Decision: if/then/else, policies, business rules
   const ruleKeywords = /\b(rule\s*\d|business rule|eligibility criteria|conditional logic)\b/i;
-  const ifThenElse = /if\s+[^,]+,\s*(then|else)\b/i;
+  const ifThenElse = /if\s+[^,\n]{1,100},\s*(then|else)\b/i;
   if (ruleKeywords.test(lower) || ifThenElse.test(lower) || (lower.includes('if ') && lower.includes(' then '))) {
     return {
       suggestedType: 'rules',
