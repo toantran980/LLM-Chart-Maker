@@ -3,6 +3,7 @@ import 'dotenv/config';
 import { createApp } from './app';
 import { log } from './logger';
 import { initObservability } from './observability';
+import { getLlmProvider, isLlmConfigured } from './llm';
 
 initObservability();
 
@@ -11,8 +12,10 @@ const PORT = process.env.PORT || 4173;
 
 const server = app.listen(PORT, () => {
   log('info', 'backend listening', { port: PORT, url: `http://localhost:${PORT}` });
-  if (!process.env.OPENAI_API_KEY) {
-    log('warn', 'No OPENAI_API_KEY found — running in fallback mode (local parser)');
+  if (!isLlmConfigured()) {
+    log('warn', 'No LLM configured — running in fallback mode (local parser)');
+  } else {
+    log('info', 'LLM provider configured', { provider: getLlmProvider() });
   }
   if (process.env.APP_API_KEY) {
     log('info', 'API access control enabled');

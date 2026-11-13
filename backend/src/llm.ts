@@ -4,18 +4,31 @@ import { ApiError } from './errors';
 import { DEFAULT_LLM_TIMEOUT_MS } from './limits';
 import { log } from './logger';
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
-const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
-const LLM_TIMEOUT_MS = Number.parseInt(process.env.LLM_TIMEOUT_MS || '', 10) || DEFAULT_LLM_TIMEOUT_MS;
-
 // Sentinel value meaning "let the LLM decide"
 const AUTO = 'auto';
 
 type LLMMessage = { role: 'system' | 'user'; content: string };
 interface OpenAIResponse { choices?: { message?: { content?: string } }[]; }
+interface OllamaResponse { message?: { content?: string }; }
+
+export function getLlmProvider(): 'openai' | 'ollama' | 'fallback' {
+  const provider = process.env.LLM_PROVIDER?.trim() || 'openai';
+  if (provider === 'openai' || provider === 'ollama' || provider === 'fallback') return provider;
+  throw new Error(`Invalid LLM_PROVIDER "${provider}"; expected openai, ollama, or fallback.`);
+}
+
+export function isLlmConfigured(): boolean {
+  const provider = getLlmProvider();
+  return provider === 'ollama' || (provider === 'openai' && Boolean(process.env.OPENAI_API_KEY));
+}
 
 async function requestLLM(messages: LLMMessage[], maxCompletionTokens = 1000): Promise<string> {
-  if (!OPENAI_API_KEY) {
+  const provider = getLlmProvider();
+  const apiKey = process.env.OPENAI_API_KEY || '';
+  if (provider === 'fallback') {
+    throw new ApiError('This feature requires an LLM. Configure LLM_PROVIDER as openai or ollama.', 503, 'LLM_ERROR');
+  }
+  if (provider === 'openai' && !apiKey) {
     throw new ApiError(
       'OpenAI API key is missing. Please set OPENAI_API_KEY in your .env file.',
       503,
@@ -24,16 +37,30 @@ async function requestLLM(messages: LLMMessage[], maxCompletionTokens = 1000): P
   }
 
   try {
-    const response = await axios.post<OpenAIResponse>(OPENAI_API_URL, {
-      model: 'gpt-5.4-mini',
-      messages,
-      temperature: 0.1,
-      max_completion_tokens: maxCompletionTokens,
-    }, {
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
-      timeout: LLM_TIMEOUT_MS,
-    });
-    const content = response.data?.choices?.[0]?.message?.content;
+    const timeout = Number.parseInt(process.env.LLM_TIMEOUT_MS || '', 10) || DEFAULT_LLM_TIMEOUT_MS;
+    let content: string | undefined;
+    if (provider === 'ollama') {
+      const baseUrl = (process.env.OLLAMA_URL?.trim() || 'http://127.0.0.1:11434').replace(/\/+$/, '');
+      const response = await axios.post<OllamaResponse>(`${baseUrl}/api/chat`, {
+        model: process.env.OLLAMA_MODEL?.trim() || 'qwen3:8b',
+        messages,
+        stream: false,
+        think: false,
+        options: { temperature: 0.1, num_predict: maxCompletionTokens },
+      }, { timeout });
+      content = response.data?.message?.content;
+    } else {
+      const response = await axios.post<OpenAIResponse>(process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions', {
+        model: 'gpt-5.4-mini',
+        messages,
+        temperature: 0.1,
+        max_completion_tokens: maxCompletionTokens,
+      }, {
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        timeout,
+      });
+      content = response.data?.choices?.[0]?.message?.content;
+    }
     if (!content) {
       throw new ApiError('Empty response from LLM', 502, 'LLM_ERROR');
     }
@@ -147,9 +174,9 @@ export async function fixMermaidWithLLM(req: { mermaid: string; error: string })
 }
 
 export async function describeDiagram(mermaid: string): Promise<string> {
-  if (!OPENAI_API_KEY) {
-    log('warn', 'No OPENAI_API_KEY found. Returning fallback description.');
-    return "This is a fallback description. Please set your OPENAI_API_KEY in the backend .env file to enable AI-powered diagram descriptions.\n\nThe diagram contains the following raw code:\n" + mermaid;
+  if (!isLlmConfigured()) {
+    log('warn', 'No LLM configured. Returning fallback description.');
+    return "This is a fallback description. Configure an LLM provider to enable AI-powered diagram descriptions.\n\nThe diagram contains the following raw code:\n" + mermaid;
   }
 
   return requestLLM([

@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import { generateDiagram, refineDiagram, fixMermaid, suggestDiagramType } from './diagram';
-import { describeDiagram } from './llm';
+import { describeDiagram, getLlmProvider, isLlmConfigured } from './llm';
 import type { DiagramRequest } from '../../shared/types';
 import { openApiSpec } from './openapi';
 import * as metrics from './metrics';
@@ -22,6 +22,7 @@ import {
 import { isDatabaseConfigured, saveDiagram, getDiagram } from './db';
 
 export function createApp() {
+  getLlmProvider();
   const app = express();
   app.set('trust proxy', 1);
 
@@ -60,7 +61,7 @@ export function createApp() {
   const apiAuth = requireApiSecret();
 
   app.get('/health', (_req, res) => {
-    const fallback = !process.env.OPENAI_API_KEY;
+    const fallback = !isLlmConfigured();
     const mem = process.memoryUsage();
     const { getMetrics } = metrics;
     res.json({

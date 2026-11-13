@@ -1,4 +1,4 @@
-import { generateDiagramWithLLM, refineDiagramWithLLM, fixMermaidWithLLM, suggestDiagramTypeWithLLM } from './llm';
+import { generateDiagramWithLLM, refineDiagramWithLLM, fixMermaidWithLLM, suggestDiagramTypeWithLLM, isLlmConfigured } from './llm';
 import { fallbackDiagram, fallbackSuggestDiagramType } from './fallback';
 import { sanitizeMermaid } from './sanitize';
 import type { DiagramRequest, DiagramType, DiagramSuggestionResponse } from '../../shared/types';
@@ -36,7 +36,7 @@ export async function fixMermaid(req: { mermaid: string; error: string }): Promi
 }
 
 export async function suggestDiagramType(text: string): Promise<DiagramSuggestionResponse> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!isLlmConfigured()) {
     recordFallback();
     return fallbackSuggestDiagramType(text);
   }

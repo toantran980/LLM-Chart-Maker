@@ -101,7 +101,23 @@ Create a `.env` file in the repository root:
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-`OPENAI_API_KEY` enables LLM generation, refinement, syntax repairs, and descriptions. Without it, initial diagram generation and descriptions use local fallbacks; refinement and syntax repair require a key.
+By default, `OPENAI_API_KEY` enables LLM generation, refinement, syntax repairs, and descriptions. Without it, initial diagram generation and descriptions use local fallbacks; refinement and syntax repair require an LLM provider.
+
+### Local Ollama option
+
+The backend can use Ollama from [my-local-agent](https://github.com/toantran980/my-local-agent) instead of OpenAI. Start Ollama and make sure `qwen3:8b` is installed (`ollama list`), then set these values in the root `.env`:
+
+```env
+LLM_PROVIDER=ollama
+OLLAMA_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=qwen3:8b
+```
+
+Restart the backend after changing the configuration. An OpenAI key is not needed in Ollama mode. `OLLAMA_URL` is the base URL, not the `/api/chat` endpoint; the model must support chat. `LLM_TIMEOUT_MS` can be increased if local inference takes longer than the default 60 seconds.
+
+`LLM_PROVIDER` accepts `openai` (default), `ollama`, or `fallback` (local parser only). If the selected LLM is unavailable, generation and type suggestions use the parser fallback; refinement, repair, and LLM descriptions report an error. The health endpoint's `fallback` flag describes configuration, not whether Ollama is currently reachable.
+
+The URL must be reachable **from the backend**. For a backend running in Docker, Compose defaults to `http://host.docker.internal:11434`; host networking and Ollama's bind address may require additional configuration. Render cannot reach Ollama on your computer via `localhost`: use a securely authenticated private connection or run the backend locally. Ollama has no built-in authentication; do not expose it directly to the internet. Text and diagrams are sent to the configured provider.
 
 ### Production safeguards (optional)
 
