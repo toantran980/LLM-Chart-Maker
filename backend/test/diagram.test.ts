@@ -29,7 +29,7 @@ describe('generateDiagram', () => {
     expect(result).toMatch(/-->/);
   });
 
-  it('uses the bounded type suggestion when auto mode falls back', async () => {
+  it('selects a built-in type when auto mode falls back', async () => {
     vi.spyOn(llmModule, 'generateDiagramWithLLM').mockRejectedValue(new Error('API down'));
 
     const result = await generateDiagram({

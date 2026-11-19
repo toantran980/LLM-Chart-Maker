@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { DiagramRequest, DiagramType, DiagramTypeOption } from '../../shared/types';
+import type { DiagramRequest, DiagramTypeOption } from '../../shared/types';
 import { ApiError } from './errors';
 import { DEFAULT_LLM_TIMEOUT_MS } from './limits';
 import { log } from './logger';
@@ -189,51 +189,4 @@ export async function describeDiagram(mermaid: string): Promise<string> {
     { role: 'system', content: 'You are an expert at understanding Mermaid diagrams. Describe the provided diagram in plain English. Keep it concise, structured, and easy to understand.' },
     { role: 'user', content: `Here is a Mermaid diagram:\n\n\`\`\`mermaid\n${mermaid}\n\`\`\`\n\nPlease describe what this diagram represents.` },
   ]);
-}
-
-export async function suggestDiagramTypeWithLLM(text: string): Promise<{ suggestedType: DiagramType; reason: string; confidence?: number }> {
-  const prompt = `You are an expert diagram designer.
-Analyze the following user text and recommend the single best Mermaid diagram type to represent it clearly.
-
-Allowed diagram types:
-- "flowchart": Processes, sequential steps, logic flows, workflows
-- "timeline": Chronological events, history, date-based milestones
-- "rules": If-then decision trees, condition/action rules, policy logic
-- "gantt": Project schedules, task durations, sprint phases, milestones
-- "er": Database schemas, entities, relationships, table attributes
-- "mindmap": Brainstorming, central concepts, hierarchical ideas/subtopics
-- "gitgraph": Git branch/commit history, merge workflows
-
-Return ONLY a JSON object with this format (no markdown fences, no extra text):
-{"suggestedType": "<one of the allowed types>", "reason": "<1 concise sentence explaining why>"}
-
-Input Text:
-${text}
-`;
-
-  const response = await requestLLM([
-    { role: 'system', content: 'You are a diagram type classification expert. You output only valid JSON.' },
-    { role: 'user', content: prompt },
-  ], 300);
-
-  try {
-    const cleanJson = response.replace(/^```json\s*/i, '').replace(/```$/i, '').trim();
-    const parsed = JSON.parse(cleanJson);
-    const validTypes: DiagramType[] = ['flowchart', 'timeline', 'rules', 'gantt', 'er', 'mindmap', 'gitgraph'];
-    if (parsed.suggestedType && validTypes.includes(parsed.suggestedType)) {
-      return {
-        suggestedType: parsed.suggestedType,
-        reason: typeof parsed.reason === 'string' ? parsed.reason : 'Best matches the structure of your input text.',
-        confidence: 0.95,
-      };
-    }
-  } catch (err) {
-    log('warn', 'Failed to parse suggestDiagramType JSON', { error: err instanceof Error ? err.message : String(err) });
-  }
-
-  return {
-    suggestedType: 'flowchart',
-    reason: 'Flowchart is recommended as a versatile baseline for this structure.',
-    confidence: 0.8,
-  };
 }

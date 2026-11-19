@@ -1,4 +1,4 @@
-import type { DiagramRequest } from '../../shared/types';
+import type { DiagramRequest, DiagramType } from '../../shared/types';
 
 const DEFAULT_DIRECTION = 'TD';
 
@@ -93,36 +93,24 @@ export function fallbackDiagram(req: DiagramRequest & { direction?: string }): s
   return `\`\`\`mermaid\n${styleDirectives}flowchart ${dir}\n${nodes.join('\n')}\n${links.join('\n')}\n\`\`\``;
 }
 
-export function fallbackSuggestDiagramType(text: string): { suggestedType: import('../../shared/types').DiagramType; reason: string; confidence?: number } {
+export function fallbackSelectDiagramType(text: string): DiagramType {
   const lower = text.toLowerCase();
 
   // Gantt chart: project schedules, tasks, duration, sprints, milestones
   if (/(gantt|sprint|milestone|deadline|duration|\bweeks?\b|\bdays?\b|schedule|task\s*\d)/i.test(lower) && /(start|end|finish|phase|quarter)/i.test(lower)) {
-    return {
-      suggestedType: 'gantt',
-      reason: 'Detected project schedule, sprint phases, or task timeline terminology.',
-      confidence: 0.85,
-    };
+    return 'gantt';
   }
 
   // Timeline: chronological dates, history, years, historical milestones
   if (/(timeline|chronolog|century|history|evolution|\b\d{4}\b\s*[:\-–]|\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]* \d{4}\b)/i.test(lower)) {
-    return {
-      suggestedType: 'timeline',
-      reason: 'Detected chronological dates, milestones, or historical sequence.',
-      confidence: 0.85,
-    };
+    return 'timeline';
   }
 
   // ER Diagram: database entities, relations, primary/foreign keys, attributes
   const erKeywords = /\b(entity|table|foreign key|primary key|one-to-many|many-to-many|database schema|relational|attributes?)\b/i;
   const erSyntax = /[a-z0-9_]{1,50}\s*\|{1,2}--o\{|[a-z0-9_]{1,50}\s*\}\|/i;
   if (erKeywords.test(lower) || erSyntax.test(lower)) {
-    return {
-      suggestedType: 'er',
-      reason: 'Detected database entities, relations, or schema attributes.',
-      confidence: 0.9,
-    };
+    return 'er';
   }
 
   // Git Graph: git branch, commit, merge, checkout, rebase, tag
@@ -130,38 +118,22 @@ export function fallbackSuggestDiagramType(text: string): { suggestedType: impor
   const gitActions = /\b(commit|branch|merge|checkout)\b/i;
   const gitBranches = /\b(main|master|feature|develop|hotfix)\b/i;
   if (gitKeywords.test(lower) || (gitActions.test(lower) && gitBranches.test(lower))) {
-    return {
-      suggestedType: 'gitgraph',
-      reason: 'Detected Git repository branching, commits, or merge workflows.',
-      confidence: 0.9,
-    };
+    return 'gitgraph';
   }
 
   // Rules / Decision: if/then/else, policies, business rules
   const ruleKeywords = /\b(rule\s*\d|business rule|eligibility criteria|conditional logic)\b/i;
   const ifThenElse = /if\s+[^,\n]{1,100},\s*(then|else)\b/i;
   if (ruleKeywords.test(lower) || ifThenElse.test(lower) || (lower.includes('if ') && lower.includes(' then '))) {
-    return {
-      suggestedType: 'rules',
-      reason: 'Detected conditional logic, decision criteria, or business rules.',
-      confidence: 0.85,
-    };
+    return 'rules';
   }
 
   // Mindmap: brainstorm, concepts, core topic, subtopics, hierarchical ideas
   if (/(mindmap|brainstorm|central concept|core theme|subtopic|sub-categories|idea tree)/i.test(lower)) {
-    return {
-      suggestedType: 'mindmap',
-      reason: 'Detected conceptual brainstorming, subtopics, or idea breakdown.',
-      confidence: 0.8,
-    };
+    return 'mindmap';
   }
 
   // Default: Flowchart
-  return {
-    suggestedType: 'flowchart',
-    reason: 'Detected a sequential process, steps, or structured workflow.',
-    confidence: 0.75,
-  };
+  return 'flowchart';
 }
 

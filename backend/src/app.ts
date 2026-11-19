@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import { generateDiagram, refineDiagram, fixMermaid, suggestDiagramType } from './diagram';
+import { generateDiagram, refineDiagram, fixMermaid } from './diagram';
 import { describeDiagram, getLlmProvider, isLlmConfigured } from './llm';
 import type { DiagramRequest } from '../../shared/types';
 import { openApiSpec } from './openapi';
@@ -18,7 +18,6 @@ import {
   validateFixRequest,
   validateRefineRequest,
   validateShareRequest,
-  validateSuggestRequest,
 } from './middleware/validate';
 import { isDatabaseConfigured, saveDiagram, getDiagram, getDatabaseStatus } from './db';
 
@@ -159,18 +158,6 @@ export function createApp() {
       const { mermaid } = req.body;
       const description = await describeDiagram(mermaid);
       res.json({ description });
-    }),
-  );
-
-  app.post(
-    '/api/suggest-type',
-    llmRateLimit,
-    apiAuth,
-    validateSuggestRequest,
-    asyncHandler(async (req, res) => {
-      const { text } = req.body;
-      const suggestion = await suggestDiagramType(text);
-      res.json(suggestion);
     }),
   );
 

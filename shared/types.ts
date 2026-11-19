@@ -8,12 +8,6 @@ export interface DiagramRequest {
   direction?: string;
 }
 
-export interface DiagramSuggestionResponse {
-  suggestedType: DiagramType;
-  reason: string;
-  confidence?: number;
-}
-
 export interface ShareDiagramRequest {
   id?: string;
   title?: string;

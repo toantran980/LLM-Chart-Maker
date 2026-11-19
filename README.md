@@ -33,7 +33,6 @@ Live App: https://llm-chart-maker-frontend.vercel.app/
 - Generate flowcharts, timelines, rules maps, Gantt charts, ER diagrams, mind maps, and Git graphs
 - Generate from all editor text, a text selection, highlighted text, a PDF selection, or an entire PDF
 - Choose an automatic, left-to-right, right-to-left, top-to-bottom, or bottom-to-top layout where supported
-- Auto-suggest the best diagram type from your input text
 - Choose **Auto (AI chooses)** to let the LLM select any Mermaid diagram type supported by the renderer; local fallback mode remains limited to the built-in diagram types
 - Refine a diagram with natural-language instructions and request a plain-language description
 - Edit Mermaid source in the app, then copy the code or an embeddable SVG snippet
@@ -116,7 +115,7 @@ OLLAMA_MODEL=qwen3:8b
 
 Restart the backend after changing the configuration. An OpenAI key is not needed in Ollama mode. `OLLAMA_URL` is the base URL, not the `/api/chat` endpoint; the model must support chat. `LLM_TIMEOUT_MS` can be increased if local inference takes longer than the default 60 seconds.
 
-`LLM_PROVIDER` accepts `openai` (default), `ollama`, or `fallback` (local parser only). If the selected LLM is unavailable, generation and type suggestions use the parser fallback; refinement, repair, and LLM descriptions report an error. The health endpoint's `fallback` flag describes configuration, not whether Ollama is currently reachable.
+`LLM_PROVIDER` accepts `openai` (default), `ollama`, or `fallback` (local parser only). If the selected LLM is unavailable, generation uses the parser fallback; refinement, repair, and LLM descriptions report an error. The health endpoint's `fallback` flag describes configuration, not whether Ollama is currently reachable.
 
 The URL must be reachable **from the backend**. For a backend running in Docker, Compose defaults to `http://host.docker.internal:11434`; host networking and Ollama's bind address may require additional configuration. Render cannot reach Ollama on your computer via `localhost`: use a securely authenticated private connection or run the backend locally. Ollama has no built-in authentication; do not expose it directly to the internet. Text and diagrams are sent to the configured provider.
 
@@ -195,7 +194,6 @@ Visit `http://localhost` in your browser. Provide `OPENAI_API_KEY` in the root `
 | `POST /api/refine`       | Refines an existing diagram from an instruction.                  |
 | `POST /api/fix`          | Attempts to repair Mermaid code after a render error.             |
 | `POST /api/describe`     | Returns a plain-language description of Mermaid code.             |
-| `POST /api/suggest-type` | Recommends the best diagram type for a given input text.          |
 | `POST /api/diagrams/share` | Saves a diagram to Neon Postgres and returns a shareable link.   |
 | `GET /api/diagrams/:id`  | Retrieves a saved shared diagram by ID.                           |
 

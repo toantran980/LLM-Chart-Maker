@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fallbackDiagram, fallbackSuggestDiagramType } from '../src/fallback';
+import { fallbackDiagram, fallbackSelectDiagramType } from '../src/fallback';
 
 
 describe('fallbackDiagram', () => {
@@ -73,41 +73,33 @@ describe('fallbackDiagram', () => {
   });
 });
 
-describe('fallbackSuggestDiagramType', () => {
-  it('suggests gantt for schedule and sprint tasks', () => {
-    const res = fallbackSuggestDiagramType('Sprint 1 schedule: Task 1 from start to finish over 2 weeks in Q1 phase');
-    expect(res.suggestedType).toBe('gantt');
-    expect(res.reason).toBeDefined();
+describe('fallbackSelectDiagramType', () => {
+  it('selects gantt for schedule and sprint tasks', () => {
+    expect(fallbackSelectDiagramType('Sprint 1 schedule: Task 1 from start to finish over 2 weeks in Q1 phase')).toBe('gantt');
   });
 
-  it('suggests timeline for historical milestones', () => {
-    const res = fallbackSuggestDiagramType('1990: Invention of Web\n2000: Dot com era\n2020: AI era timeline');
-    expect(res.suggestedType).toBe('timeline');
+  it('selects timeline for historical milestones', () => {
+    expect(fallbackSelectDiagramType('1990: Invention of Web\n2000: Dot com era\n2020: AI era timeline')).toBe('timeline');
   });
 
-  it('suggests er for database tables and relations', () => {
-    const res = fallbackSuggestDiagramType('Database schema with User table, Order entity, primary key id, and one-to-many relation');
-    expect(res.suggestedType).toBe('er');
+  it('selects er for database tables and relations', () => {
+    expect(fallbackSelectDiagramType('Database schema with User table, Order entity, primary key id, and one-to-many relation')).toBe('er');
   });
 
-  it('suggests gitgraph for branching and merge workflows', () => {
-    const res = fallbackSuggestDiagramType('Git branch develop, commit fix, merge into main');
-    expect(res.suggestedType).toBe('gitgraph');
+  it('selects gitgraph for branching and merge workflows', () => {
+    expect(fallbackSelectDiagramType('Git branch develop, commit fix, merge into main')).toBe('gitgraph');
   });
 
-  it('suggests rules for conditional statements', () => {
-    const res = fallbackSuggestDiagramType('if user has permission, then show dashboard, else redirect to login');
-    expect(res.suggestedType).toBe('rules');
+  it('selects rules for conditional statements', () => {
+    expect(fallbackSelectDiagramType('if user has permission, then show dashboard, else redirect to login')).toBe('rules');
   });
 
-  it('suggests mindmap for brainstorming and central themes', () => {
-    const res = fallbackSuggestDiagramType('Mindmap brainstorming on product ideas with central concept and subtopics');
-    expect(res.suggestedType).toBe('mindmap');
+  it('selects mindmap for brainstorming and central themes', () => {
+    expect(fallbackSelectDiagramType('Mindmap brainstorming on product ideas with central concept and subtopics')).toBe('mindmap');
   });
 
   it('defaults to flowchart for generic steps', () => {
-    const res = fallbackSuggestDiagramType('Step 1: Open app\nStep 2: Click button\nStep 3: Done');
-    expect(res.suggestedType).toBe('flowchart');
+    expect(fallbackSelectDiagramType('Step 1: Open app\nStep 2: Click button\nStep 3: Done')).toBe('flowchart');
   });
 });
 

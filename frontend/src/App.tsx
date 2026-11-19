@@ -2,7 +2,7 @@ import './App.css';
 import './mermaid-overrides.css';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import useSelection from './hooks/useSelection';
-import { postDiagram, postRefine, postSuggestType, fetchSharedDiagram } from './utils/api';
+import { postDiagram, postRefine, fetchSharedDiagram } from './utils/api';
 import { moveCaretToEnd } from './utils/dom';
 import EditorArea from './components/EditorArea';
 import Controls from './components/Controls';
@@ -14,7 +14,7 @@ import { saveHistoryEntry, type HistoryEntry } from './utils/history';
 import { useBackendHealth } from './hooks/useBackendHealth';
 import { normalizeFlowchartDirection, loadSavedTheme, saveTheme } from './utils/diagram';
 
-import type { DiagramTypeOption, DiagramSuggestionResponse } from '@shared/types';
+import type { DiagramTypeOption } from '@shared/types';
 
 /**
  * Main application component definition
@@ -33,8 +33,6 @@ export default function App() {
   const [loadingFull, setLoadingFull] = useState(false);
   const [loadingSelection, setLoadingSelection] = useState(false);
   const [loadingRefine, setLoadingRefine] = useState(false);
-  const [loadingSuggest, setLoadingSuggest] = useState(false);
-  const [suggestion, setSuggestion] = useState<DiagramSuggestionResponse | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [failedDiagramRequest, setFailedDiagramRequest] = useState<{ payload: { text: string; diagramType: DiagramTypeOption; direction?: string }; which: 'full' | 'selection' } | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -160,33 +158,6 @@ export default function App() {
     requestDiagram(payload, 'selection');
   }, [cachedSelection, text, direction, diagramType, requestDiagram]);
 
-  const handleSuggestType = useCallback(async () => {
-    const activeSelection = window.getSelection()?.toString().trim();
-    const candidateText = activeSelection || cachedSelection || (editableRef.current ? editableRef.current.innerText : text);
-    const trimmed = candidateText.trim();
-    if (!trimmed) {
-      alert('Please enter or select some text first to suggest a diagram type.');
-      return;
-    }
-    setLoadingSuggest(true);
-    try {
-      const result = await postSuggestType(trimmed);
-      if (result?.suggestedType) {
-        setSuggestion(result);
-      }
-    } catch (err) {
-      console.error('Suggest type error:', err);
-    } finally {
-      setLoadingSuggest(false);
-    }
-  }, [cachedSelection, text]);
-
-  const handleAcceptSuggestion = () => {
-    if (suggestion) {
-      setDiagramType(suggestion.suggestedType);
-    }
-  };
-
   function handleColorPick(color: string) {
     applyHighlight(color);
     closePicker();
@@ -300,11 +271,6 @@ export default function App() {
             loadingSelection={loadingSelection}
             hasSelectionOrHighlights={hasSelectionOrHighlights}
             onFileLoaded={handleFileLoaded}
-            onSuggestType={handleSuggestType}
-            loadingSuggest={loadingSuggest}
-            suggestion={suggestion}
-            onAcceptSuggestion={handleAcceptSuggestion}
-            onDismissSuggestion={() => setSuggestion(null)}
           />
         </section>
       )}

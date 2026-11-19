@@ -22,13 +22,12 @@ describe('Ollama provider', () => {
     resetRateLimitStore();
   });
 
-  it('uses Ollama without an OpenAI key for generation, refinement, repair, descriptions and suggestions', async () => {
+  it('uses Ollama without an OpenAI key for generation, refinement, repair, and descriptions', async () => {
     const post = vi.spyOn(axios, 'post')
       .mockResolvedValueOnce({ data: { message: { content: '```mermaid\nflowchart TD\nA --> B\n```' } } })
       .mockResolvedValueOnce({ data: { message: { content: '```mermaid\nflowchart TD\nA --> C\n```' } } })
       .mockResolvedValueOnce({ data: { message: { content: '```mermaid\nflowchart TD\nA --> B\n```' } } })
-      .mockResolvedValueOnce({ data: { message: { content: 'A leads to B.' } } })
-      .mockResolvedValueOnce({ data: { message: { content: '{"suggestedType":"timeline","reason":"Events over time."}' } } });
+      .mockResolvedValueOnce({ data: { message: { content: 'A leads to B.' } } });
     const app = createApp();
 
     expect((await request(app).get('/health')).body.fallback).toBe(false);
@@ -40,9 +39,7 @@ describe('Ollama provider', () => {
     expect(fixed.body.mermaid).toContain('A --> B');
     const described = await request(app).post('/api/describe').send({ mermaid: 'flowchart TD\nA --> B' });
     expect(described.body.description).toBe('A leads to B.');
-    const suggestion = await request(app).post('/api/suggest-type').send({ text: 'Events over time' });
-    expect(suggestion.body.suggestedType).toBe('timeline');
-    expect(post).toHaveBeenCalledTimes(5);
+    expect(post).toHaveBeenCalledTimes(4);
     expect(post.mock.calls[0][0]).toBe('http://127.0.0.1:11434/api/chat');
     expect(post.mock.calls[0][1]).toMatchObject({
       model: 'qwen3:8b', stream: false, think: false,
@@ -50,15 +47,12 @@ describe('Ollama provider', () => {
     });
   });
 
-  it('falls back for generation and suggestions when Ollama is unavailable but reports errors for refinement', async () => {
+  it('falls back for generation when Ollama is unavailable but reports errors for refinement', async () => {
     vi.spyOn(axios, 'post').mockRejectedValue(new Error('Ollama unavailable'));
     const app = createApp();
     const generated = await request(app).post('/api/diagram').send({ text: 'Start\nFinish', diagramType: 'flowchart' });
     expect(generated.status).toBe(200);
     expect(generated.body.mermaid).toContain('Start');
-    const suggestion = await request(app).post('/api/suggest-type').send({ text: 'Steps to follow' });
-    expect(suggestion.status).toBe(200);
-    expect(suggestion.body.suggestedType).toBe('flowchart');
     const refined = await request(app).post('/api/refine').send({ currentDiagram: 'flowchart TD\nA --> B', instruction: 'Add C', diagramType: 'flowchart' });
     expect(refined.status).toBe(500);
   });

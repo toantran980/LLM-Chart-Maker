@@ -199,7 +199,7 @@ export default function Result({
     <section className="section-result">
       <div className="result-header">
         <label className="small-section" style={{ margin: 0 }}>Generated Diagram</label>
-        <div className="theme-switcher" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: '1rem' }}>
+        <div className="theme-switcher">
           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Theme:</span>
           {['base', 'default', 'dark', 'forest', 'neutral'].map(t => (
             <button
@@ -217,7 +217,7 @@ export default function Result({
             </button>
           ))}
         </div>
-        <div className="result-actions" style={{ marginLeft: 'auto' }}>
+        <div className="result-actions">
           <button className="action-btn" onClick={handleDescribe} disabled={loadingDesc}>
             {loadingDesc ? <span className="spinner" style={{width:'12px',height:'12px',borderWidth:'2px'}}></span> : '🔍 Describe'}
           </button>

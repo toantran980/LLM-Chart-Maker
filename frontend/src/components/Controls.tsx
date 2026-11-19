@@ -1,5 +1,5 @@
 import FileUpload from '../FileUpload';
-import type { DiagramTypeOption, DiagramSuggestionResponse } from '@shared/types';
+import type { DiagramTypeOption } from '@shared/types';
 
 interface ControlsProps {
   diagramType: DiagramTypeOption;
@@ -10,11 +10,6 @@ interface ControlsProps {
   loadingSelection: boolean;
   hasSelectionOrHighlights: boolean;
   onFileLoaded: (content: string, file: File) => void;
-  onSuggestType?: () => void;
-  loadingSuggest?: boolean;
-  suggestion?: DiagramSuggestionResponse | null;
-  onAcceptSuggestion?: () => void;
-  onDismissSuggestion?: () => void;
 }
 
 const TYPE_NAMES: Record<DiagramTypeOption, string> = {
@@ -37,50 +32,19 @@ export default function Controls({
   loadingSelection, 
   hasSelectionOrHighlights, 
   onFileLoaded,
-  onSuggestType,
-  loadingSuggest = false,
-  suggestion = null,
-  onAcceptSuggestion,
-  onDismissSuggestion,
 }: ControlsProps) {
-  const handleTypeChange = (newType: DiagramTypeOption) => {
-    setDiagramType(newType);
-    if (suggestion && onDismissSuggestion) {
-      onDismissSuggestion();
-    }
-  };
-
   return (
     <div className="controls">
       <div className="settings-grid">
-        {/* Diagram Type Selector & Suggestion */}
         <div className="setting-item">
-          <div className="setting-item-header">
-            <label htmlFor="diagram-type-select" className="small-section" style={{ margin: 0 }}>
-              Diagram Type
-            </label>
-            {onSuggestType && (
-              <button
-                type="button"
-                onClick={onSuggestType}
-                disabled={loadingSuggest}
-                className="suggest-type-trigger-btn"
-                title="Recommend the best diagram type from your text"
-                aria-label="Suggest diagram type"
-              >
-                {loadingSuggest ? (
-                  <span className="spinner" style={{ width: '10px', height: '10px', borderWidth: '1.5px' }} />
-                ) : (
-                  '✨ Suggest Type'
-                )}
-              </button>
-            )}
-          </div>
+          <label htmlFor="diagram-type-select" className="small-section" style={{ margin: 0 }}>
+            Diagram Type
+          </label>
 
           <select
             id="diagram-type-select"
             value={diagramType}
-            onChange={(e) => handleTypeChange(e.target.value as DiagramTypeOption)}
+            onChange={(e) => setDiagramType(e.target.value as DiagramTypeOption)}
             className="modern-select"
             aria-label="Choose diagram type"
           >
@@ -90,17 +54,7 @@ export default function Controls({
               </option>
             ))}
           </select>
-
-          {suggestion && (
-            <TypeSuggestionBanner
-              suggestion={suggestion}
-              currentType={diagramType}
-              onAccept={onAcceptSuggestion}
-              onDismiss={onDismissSuggestion}
-            />
-          )}
         </div>
-        {/* Generation Actions & File Upload */}
         <div className="setting-item">
           <label className="small-section">Actions</label>
           <div className="button-row">
@@ -127,55 +81,6 @@ export default function Controls({
             <FileUpload onFileLoaded={onFileLoaded} />
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-interface BannerProps {
-  suggestion: DiagramSuggestionResponse;
-  currentType: DiagramTypeOption;
-  onAccept?: () => void;
-  onDismiss?: () => void;
-}
-
-function TypeSuggestionBanner({ suggestion, currentType, onAccept, onDismiss }: BannerProps) {
-  const isApplied = currentType === suggestion.suggestedType;
-  const suggestedLabel = TYPE_NAMES[suggestion.suggestedType] || suggestion.suggestedType;
-
-  return (
-    <div className="type-suggestion-banner">
-      <div className="type-suggestion-content">
-        <span className="type-suggestion-badge">
-          💡 Suggestion: <strong>{suggestedLabel}</strong>
-        </span>
-        <p className="type-suggestion-reason">{suggestion.reason}</p>
-      </div>
-
-      <div className="type-suggestion-actions">
-        {!isApplied ? (
-          <button
-            type="button"
-            onClick={onAccept}
-            className="suggestion-action-btn accept"
-            title={`Switch to ${suggestion.suggestedType}`}
-          >
-            ✓ Apply
-          </button>
-        ) : (
-          <span className="suggestion-applied-badge">Applied</span>
-        )}
-        {onDismiss && (
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="suggestion-action-btn dismiss"
-            title="Dismiss recommendation"
-            aria-label="Dismiss suggestion"
-          >
-            ✕
-          </button>
-        )}
       </div>
     </div>
   );

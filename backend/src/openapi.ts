@@ -4,7 +4,7 @@ export const openApiSpec = {
     title: 'LLM Chart Maker API',
     version: '1.0.0',
     description:
-      'Generate, refine, fix, describe, and auto-suggest Mermaid diagrams from natural language.',
+      'Generate, refine, fix, and describe Mermaid diagrams from natural language, with automatic diagram-type selection.',
   },
   servers: [{ url: '/' }],
   security: [{ apiKey: [] }],
@@ -69,17 +69,6 @@ export const openApiSpec = {
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/DescribeRequest' } } } },
         responses: {
           '200': { description: 'Diagram description', content: { 'application/json': { schema: { type: 'object', properties: { description: { type: 'string' } } } } } },
-          '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
-        },
-      },
-    },
-    '/api/suggest-type': {
-      post: {
-        summary: 'Suggest a diagram type',
-        description: 'Suggest the best diagram type for a given text description.',
-        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/SuggestRequest' } } } },
-        responses: {
-          '200': { description: 'Type suggestion', content: { 'application/json': { schema: { $ref: '#/components/schemas/Suggestion' } } } },
           '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
         },
       },
@@ -165,19 +154,6 @@ export const openApiSpec = {
         type: 'object',
         required: ['mermaid'],
         properties: { mermaid: { type: 'string' } },
-      },
-      SuggestRequest: {
-        type: 'object',
-        required: ['text'],
-        properties: { text: { type: 'string' } },
-      },
-      Suggestion: {
-        type: 'object',
-        properties: {
-          suggestedType: { type: 'string' },
-          reason: { type: 'string' },
-          confidence: { type: 'number' },
-        },
       },
       ShareRequest: {
         type: 'object',

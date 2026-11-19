@@ -1,7 +1,7 @@
-import { generateDiagramWithLLM, refineDiagramWithLLM, fixMermaidWithLLM, suggestDiagramTypeWithLLM, isLlmConfigured } from './llm';
-import { fallbackDiagram, fallbackSuggestDiagramType } from './fallback';
+import { generateDiagramWithLLM, refineDiagramWithLLM, fixMermaidWithLLM } from './llm';
+import { fallbackDiagram, fallbackSelectDiagramType } from './fallback';
 import { sanitizeMermaid } from './sanitize';
-import type { DiagramRequest, DiagramType, DiagramTypeOption, DiagramSuggestionResponse } from '../../shared/types';
+import type { DiagramRequest, DiagramType, DiagramTypeOption } from '../../shared/types';
 import { log } from './logger';
 import { recordFallback } from './metrics';
 
@@ -27,7 +27,7 @@ export async function generateDiagram(req: DiagramRequest): Promise<string> {
 
 function fallbackForRequest(req: DiagramRequest): string {
   const diagramType: DiagramType = req.diagramType === 'auto'
-    ? fallbackSuggestDiagramType(req.text).suggestedType
+    ? fallbackSelectDiagramType(req.text)
     : req.diagramType;
   return fallbackDiagram({ ...req, diagramType });
 }
@@ -40,18 +40,4 @@ export async function refineDiagram(req: { currentDiagram: string; instruction: 
 export async function fixMermaid(req: { mermaid: string; error: string }): Promise<string> {
   const raw = await fixMermaidWithLLM(req);
   return sanitizeMermaid(raw);
-}
-
-export async function suggestDiagramType(text: string): Promise<DiagramSuggestionResponse> {
-  if (!isLlmConfigured()) {
-    recordFallback();
-    return fallbackSuggestDiagramType(text);
-  }
-  try {
-    return await suggestDiagramTypeWithLLM(text);
-  } catch (err) {
-    log('warn', 'suggestDiagramType error, using fallback', { error: (err as Error).message });
-    recordFallback();
-    return fallbackSuggestDiagramType(text);
-  }
 }
