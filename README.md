@@ -182,6 +182,7 @@ docker compose up --build
 
 Visit `http://localhost` in your browser. Provide `OPENAI_API_KEY` in the root `.env` file before starting if you want LLM-powered features.
 
+
 ---
 
 ## API endpoints

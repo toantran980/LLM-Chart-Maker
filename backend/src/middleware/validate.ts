@@ -6,6 +6,8 @@ import {
   MAX_INSTRUCTION_LENGTH,
   MAX_MERMAID_LENGTH,
   MAX_TEXT_LENGTH,
+  MAX_TITLE_LENGTH,
+  MAX_THEME_LENGTH,
   VALID_DIAGRAM_TYPES,
   VALID_DIRECTIONS,
 } from '../limits';
@@ -143,6 +145,25 @@ export const validateSuggestRequest: RequestHandler = (req, _res, next) => {
     const details: Record<string, string> = {};
 
     requireString(body, 'text', MAX_TEXT_LENGTH, details);
+
+    throwIfInvalid(details);
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const validateShareRequest: RequestHandler = (req, _res, next) => {
+  try {
+    const body = req.body as Record<string, unknown>;
+    const details: Record<string, string> = {};
+
+    requireString(body, 'mermaid', MAX_MERMAID_LENGTH, details);
+    requireDiagramType(body, details);
+    requireOptionalString(body, 'title', MAX_TITLE_LENGTH, details);
+    requireOptionalString(body, 'theme', MAX_THEME_LENGTH, details);
+    requireOptionalString(body, 'sourceText', MAX_TEXT_LENGTH, details);
+    validateDirection(body, details);
 
     throwIfInvalid(details);
     next();

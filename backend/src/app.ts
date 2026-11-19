@@ -17,9 +17,10 @@ import {
   validateDiagramRequest,
   validateFixRequest,
   validateRefineRequest,
+  validateShareRequest,
   validateSuggestRequest,
 } from './middleware/validate';
-import { isDatabaseConfigured, saveDiagram, getDiagram } from './db';
+import { isDatabaseConfigured, saveDiagram, getDiagram, getDatabaseStatus } from './db';
 
 export function createApp() {
   getLlmProvider();
@@ -77,6 +78,14 @@ export function createApp() {
       metrics: getMetrics(),
     });
   });
+
+  app.get('/ready', asyncHandler(async (_req, res) => {
+    const database = await getDatabaseStatus();
+    res.status(database.configured && !database.ready ? 503 : 200).json({
+      ok: database.ready,
+      database,
+    });
+  }));
 
   app.get('/api/openapi.json', (_req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -167,12 +176,11 @@ export function createApp() {
 
   app.post(
     '/api/diagrams/share',
+    llmRateLimit,
+    apiAuth,
+    validateShareRequest,
     asyncHandler(async (req, res) => {
       const { mermaid, diagramType, title, direction, theme, sourceText } = req.body;
-      if (!mermaid || typeof mermaid !== 'string') {
-        res.status(400).json({ error: 'Missing or invalid "mermaid" code' });
-        return;
-      }
       const record = await saveDiagram({
         title,
         mermaid,

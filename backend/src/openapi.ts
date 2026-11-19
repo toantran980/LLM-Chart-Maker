@@ -17,6 +17,16 @@ export const openApiSpec = {
           '200': { description: 'Service healthy', content: { 'application/json': { schema: { $ref: '#/components/schemas/Health' } } } },
         },
       },
+      '/ready': {
+        get: {
+          summary: 'Readiness probe',
+          description: 'Reports whether configured dependencies are reachable.',
+          responses: {
+            '200': { description: 'Service ready' },
+            '503': { description: 'Configured dependency unavailable' },
+          },
+        },
+      },
     },
     '/api/diagram': {
       post: {
@@ -74,6 +84,20 @@ export const openApiSpec = {
         },
       },
     },
+    '/api/diagrams/share': {
+      post: {
+        summary: 'Share a diagram',
+        description: 'Validate and persist a diagram, then return a shareable record and ID.',
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ShareRequest' } } } },
+        responses: {
+          '200': { description: 'Shared diagram', content: { 'application/json': { schema: { $ref: '#/components/schemas/SharedDiagram' } } } },
+          '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '401': { description: 'Missing or invalid API key', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '429': { description: 'Rate limited', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '503': { description: 'Database persistence unavailable', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
   },
   components: {
     securitySchemes: {
@@ -119,7 +143,7 @@ export const openApiSpec = {
         required: ['text'],
         properties: {
           diagramType: { type: 'string', enum: ['flowchart', 'gantt', 'timeline', 'er', 'gitgraph', 'mindmap', 'rules'] },
-          direction: { type: 'string', enum: ['auto', 'TD', 'LR', 'RL', 'BT'] },
+          direction: { type: 'string', enum: ['auto'], default: 'auto' },
           text: { type: 'string' },
         },
       },
@@ -153,6 +177,32 @@ export const openApiSpec = {
           suggestedType: { type: 'string' },
           reason: { type: 'string' },
           confidence: { type: 'number' },
+        },
+      },
+      ShareRequest: {
+        type: 'object',
+        required: ['mermaid', 'diagramType'],
+        properties: {
+          mermaid: { type: 'string', maxLength: 20000 },
+          diagramType: { type: 'string', enum: ['flowchart', 'gantt', 'timeline', 'er', 'gitgraph', 'mindmap', 'rules'] },
+          title: { type: 'string', maxLength: 255 },
+          direction: { type: 'string', enum: ['auto'], default: 'auto' },
+          theme: { type: 'string', maxLength: 64 },
+          sourceText: { type: 'string', maxLength: 15000 },
+        },
+      },
+      SharedDiagram: {
+        type: 'object',
+        required: ['id', 'mermaid', 'diagramType', 'createdAt'],
+        properties: {
+          id: { type: 'string' },
+          title: { type: 'string', nullable: true },
+          mermaid: { type: 'string' },
+          diagramType: { type: 'string' },
+          direction: { type: 'string', nullable: true },
+          theme: { type: 'string', nullable: true },
+          sourceText: { type: 'string', nullable: true },
+          createdAt: { type: 'string', format: 'date-time' },
         },
       },
     },

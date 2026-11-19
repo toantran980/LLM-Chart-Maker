@@ -15,6 +15,7 @@ describe('getApiBase', () => {
     vi.stubEnv('VITE_API_BASE', 'https://api.example.com/');
     expect(getApiBase()).toBe('https://api.example.com');
   });
+
 });
 
 describe('postDiagram', () => {

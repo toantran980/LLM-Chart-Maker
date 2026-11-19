@@ -25,7 +25,7 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [text, setText] = useState<string>('');
   const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
-  const [direction, setDirection] = useState<string>('auto');
+  const direction = 'auto';
   const [theme, setTheme] = useState<string>(() => loadSavedTheme() ?? 'base');
   const [mermaid, setMermaid] = useState<string>('');
   const [historyRefresh, setHistoryRefresh] = useState(0);
@@ -72,7 +72,6 @@ export default function App() {
           if (data?.mermaid) {
             setMermaid(data.mermaid);
             if (data.diagramType) setDiagramType(data.diagramType);
-            if (data.direction) setDirection(data.direction);
             if (data.theme) setTheme(data.theme);
             if (data.sourceText) setText(data.sourceText);
             saveHistoryEntry({
@@ -243,9 +242,6 @@ export default function App() {
   const handleRestoreHistory = (entry: HistoryEntry) => {
     setMermaid(entry.mermaid);
     setDiagramType(entry.diagramType);
-    if (entry.direction) {
-      setDirection(entry.direction);
-    }
     if (entry.theme) {
       setTheme(entry.theme);
     }
@@ -298,8 +294,6 @@ export default function App() {
           <Controls
             diagramType={diagramType}
             setDiagramType={setDiagramType}
-            direction={direction}
-            setDirection={setDirection}
             onGenerateFull={() => {
               const latestText = editableRef.current ? editableRef.current.innerText : text;
               requestDiagram({ text: latestText, diagramType, direction }, 'full');
@@ -340,7 +334,6 @@ export default function App() {
         theme={theme}
         setTheme={setTheme}
         diagramType={diagramType}
-        direction={direction}
         sourceText={text}
       />
       <DiagramHistory

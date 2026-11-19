@@ -3,6 +3,7 @@ import request from 'supertest';
 import { createApp } from '../src/app';
 import * as diagramModule from '../src/diagram';
 import * as llmModule from '../src/llm';
+import * as dbModule from '../src/db';
 import { resetRateLimitStore } from '../src/middleware/rateLimit';
 import { MAX_TEXT_LENGTH } from '../src/limits';
 import { ApiError } from '../src/errors';
@@ -14,6 +15,8 @@ describe('API', () => {
     delete process.env.APP_API_KEY;
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    delete process.env.POSTGRES_URL;
+    delete process.env.DATABASE_URL;
   });
 
   afterEach(() => {
@@ -24,6 +27,8 @@ describe('API', () => {
     delete process.env.APP_API_KEY;
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    delete process.env.POSTGRES_URL;
+    delete process.env.DATABASE_URL;
   });
 
   it('GET /health returns ok and fallback flag', async () => {
@@ -49,6 +54,18 @@ describe('API', () => {
     expect(res.body.metrics).toBeDefined();
     expect(typeof res.body.metrics.totalRequests).toBe('number');
     expect(res.body.metrics.fallbackCount).toBeDefined();
+  });
+
+  it('GET /ready returns ready when database fallback is unconfigured', async () => {
+    delete process.env.POSTGRES_URL;
+    delete process.env.DATABASE_URL;
+    const app = createApp();
+
+    const res = await request(app).get('/ready');
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.database).toEqual({ configured: false, ready: true });
   });
 
   it('GET /api/openapi.json returns the spec', async () => {
@@ -199,6 +216,21 @@ describe('API', () => {
     expect(res.body.code).toBe('RATE_LIMIT_EXCEEDED');
   });
 
+  it('uses the caller IP rather than client-supplied API keys for rate limits', async () => {
+    process.env.RATE_LIMIT_MAX = '1';
+    resetRateLimitStore();
+
+    const app = createApp();
+    vi.spyOn(diagramModule, 'generateDiagram').mockResolvedValue('```mermaid\nflowchart TD\nA --> B\n```');
+    const payload = { text: 'A\nB', diagramType: 'flowchart' as const };
+
+    await request(app).post('/api/diagram').set('X-API-Key', 'visitor-key-one').send(payload);
+    const res = await request(app).post('/api/diagram').set('X-API-Key', 'visitor-key-two').send(payload);
+
+    expect(res.status).toBe(429);
+    expect(res.body.code).toBe('RATE_LIMIT_EXCEEDED');
+  });
+
   it('does not rate limit GET /health', async () => {
     process.env.RATE_LIMIT_MAX = '1';
     resetRateLimitStore();
@@ -289,7 +321,7 @@ describe('API', () => {
         title: 'Architecture Overview',
         mermaid: 'graph TD; A-->B;',
         diagramType: 'flowchart',
-        direction: 'TD',
+        direction: 'auto',
         theme: 'dark',
       });
 
@@ -303,6 +335,77 @@ describe('API', () => {
     expect(getRes.body.id).toBe(shareRes.body.id);
     expect(getRes.body.title).toBe('Architecture Overview');
     expect(getRes.body.mermaid).toBe('graph TD; A-->B;');
+  });
+
+  it('POST /api/diagrams/share rejects missing Mermaid code', async () => {
+    const app = createApp();
+
+    const res = await request(app)
+      .post('/api/diagrams/share')
+      .send({ diagramType: 'flowchart' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+    expect(res.body.details.mermaid).toBeDefined();
+  });
+
+  it('POST /api/diagrams/share rejects invalid fields', async () => {
+    const app = createApp();
+
+    const res = await request(app)
+      .post('/api/diagrams/share')
+      .send({
+        mermaid: 'graph TD; A-->B;',
+        diagramType: 'pie-chart',
+        title: 'x'.repeat(256),
+        direction: 'SIDEWAYS',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+    expect(res.body.details.diagramType).toBeDefined();
+    expect(res.body.details.title).toBeDefined();
+    expect(res.body.details.direction).toBeDefined();
+  });
+
+  it('POST /api/diagrams/share requires the API secret when configured', async () => {
+    process.env.APP_API_KEY = 'test-secret';
+    const app = createApp();
+
+    const res = await request(app)
+      .post('/api/diagrams/share')
+      .send({ mermaid: 'graph TD; A-->B;', diagramType: 'flowchart' });
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe('UNAUTHORIZED');
+  });
+
+  it('POST /api/diagrams/share does not report success when Neon persistence fails', async () => {
+    vi.spyOn(dbModule, 'saveDiagram').mockRejectedValue(
+      new ApiError('Unable to save the shared diagram. Please try again.', 503, 'DATABASE_ERROR'),
+    );
+    const app = createApp();
+
+    const res = await request(app)
+      .post('/api/diagrams/share')
+      .send({ mermaid: 'graph TD; A-->B;', diagramType: 'flowchart' });
+
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe('DATABASE_ERROR');
+  });
+
+  it('POST /api/diagrams/share is rate limited', async () => {
+    process.env.RATE_LIMIT_MAX = '2';
+    resetRateLimitStore();
+    const app = createApp();
+    const payload = { mermaid: 'graph TD; A-->B;', diagramType: 'flowchart' as const };
+
+    await request(app).post('/api/diagrams/share').send(payload);
+    await request(app).post('/api/diagrams/share').send(payload);
+    const res = await request(app).post('/api/diagrams/share').send(payload);
+
+    expect(res.status).toBe(429);
+    expect(res.body.code).toBe('RATE_LIMIT_EXCEEDED');
   });
 
   it('GET /api/diagrams/:id returns 404 for unknown diagram', async () => {

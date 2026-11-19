@@ -6,7 +6,8 @@ import type {
 } from '@shared/types';
 
 export function getApiBase(): string {
-  return (import.meta.env.VITE_API_BASE ?? '').replace(/\/$/, '');
+  const configuredBase = import.meta.env.VITE_API_BASE?.trim();
+  return (configuredBase ?? '').replace(/\/$/, '');
 }
 
 export type DiagramPayload = { text: string; diagramType: DiagramType; direction?: string; instruction?: string };

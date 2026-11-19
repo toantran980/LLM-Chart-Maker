@@ -4,6 +4,8 @@ export const MAX_TEXT_LENGTH = 15_000;
 export const MAX_INSTRUCTION_LENGTH = 2_000;
 export const MAX_MERMAID_LENGTH = 20_000;
 export const MAX_ERROR_LENGTH = 2_000;
+export const MAX_TITLE_LENGTH = 255;
+export const MAX_THEME_LENGTH = 64;
 
 export const VALID_DIAGRAM_TYPES: readonly DiagramType[] = [
   'flowchart',
@@ -15,7 +17,7 @@ export const VALID_DIAGRAM_TYPES: readonly DiagramType[] = [
   'gitgraph',
 ];
 
-export const VALID_DIRECTIONS = ['auto', 'LR', 'RL', 'TD', 'BT'] as const;
+export const VALID_DIRECTIONS = ['auto'] as const;
 
 export const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000;
 export const DEFAULT_RATE_LIMIT_MAX = 20;

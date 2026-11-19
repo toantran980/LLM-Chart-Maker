@@ -1,11 +1,10 @@
-import type { Response } from 'express';
-
 export type ErrorCode =
   | 'VALIDATION_ERROR'
   | 'UNAUTHORIZED'
   | 'RATE_LIMIT_EXCEEDED'
   | 'LLM_TIMEOUT'
   | 'LLM_ERROR'
+  | 'DATABASE_ERROR'
   | 'INTERNAL_ERROR';
 
 export interface ApiErrorBody {
@@ -32,8 +31,4 @@ export class ApiError extends Error {
       ...(this.details ? { details: this.details } : {}),
     };
   }
-}
-
-export function sendError(res: Response, err: ApiError): Response {
-  return res.status(err.statusCode).json(err.toJSON());
 }

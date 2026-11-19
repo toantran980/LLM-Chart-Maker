@@ -1,6 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 import { log } from './logger';
+import { ApiError } from './errors';
 
 export interface SharedDiagram {
   id: string;
@@ -17,18 +18,39 @@ export interface SharedDiagram {
 const inMemoryDiagrams = new Map<string, SharedDiagram>();
 
 export function getDatabaseUrl(): string | null {
-  const { POSTGRES_URL } = process.env;
-  if (POSTGRES_URL && POSTGRES_URL.trim()) {
-    return POSTGRES_URL.trim();
-  }
-  return null;
+  const url = process.env.POSTGRES_URL?.trim() || process.env.DATABASE_URL?.trim();
+  return url || null;
 }
 
 let sqlClient: ReturnType<typeof neon> | null = null;
 let schemaInitialized = false;
+let databaseReachable = false;
 
 export function isDatabaseConfigured(): boolean {
   return Boolean(getDatabaseUrl());
+}
+
+export async function getDatabaseStatus(): Promise<{ configured: boolean; ready: boolean }> {
+  const configured = isDatabaseConfigured();
+  if (!configured) {
+    return { configured: false, ready: true };
+  }
+
+  const sql = getSql();
+  if (!sql) {
+    databaseReachable = false;
+    return { configured: true, ready: false };
+  }
+
+  try {
+    await initDbSchema();
+    await sql`SELECT 1`;
+    databaseReachable = true;
+  } catch {
+    databaseReachable = false;
+  }
+
+  return { configured: true, ready: databaseReachable };
 }
 
 function getSql(): ReturnType<typeof neon> | null {
@@ -97,16 +119,17 @@ export async function saveDiagram(input: {
     createdAt: now,
   };
 
-  // Always keep in-memory backup
-  inMemoryDiagrams.set(id, record);
-
   const sql = getSql();
   if (!sql) {
+    inMemoryDiagrams.set(id, record);
     return record;
   }
 
   try {
-    await initDbSchema();
+    const schemaReady = await initDbSchema();
+    if (!schemaReady) {
+      throw new Error('Shared diagram database schema is unavailable');
+    }
     await sql`
       INSERT INTO shared_diagrams (
         id, title, mermaid, diagram_type, direction, theme, source_text, created_at, updated_at
@@ -130,13 +153,18 @@ export async function saveDiagram(input: {
         source_text = EXCLUDED.source_text,
         updated_at = NOW();
     `;
+    inMemoryDiagrams.set(id, record);
     return record;
   } catch (err) {
-    log('warn', 'Failed to persist shared diagram to Neon; retained in-memory fallback', {
+    log('error', 'Failed to persist shared diagram to Neon', {
       id,
       error: String(err),
     });
-    return record;
+    throw new ApiError(
+      'Unable to save the shared diagram. Please try again.',
+      503,
+      'DATABASE_ERROR',
+    );
   }
 }
 

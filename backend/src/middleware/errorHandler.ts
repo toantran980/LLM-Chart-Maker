@@ -1,7 +1,7 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { ApiError } from '../errors';
 import { captureException } from '../observability';
-import { recordError, recordRequest } from '../metrics';
+import { recordError } from '../metrics';
 
 export function asyncHandler(handler: RequestHandler): RequestHandler {
   return (req, res, next) => {

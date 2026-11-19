@@ -11,7 +11,6 @@ interface Props {
   theme?: string;
   setTheme?: (theme: string) => void;
   diagramType?: DiagramType;
-  direction?: string;
   sourceText?: string;
 }
 
@@ -73,7 +72,6 @@ export default function Result({
   theme: propTheme,
   setTheme: propSetTheme,
   diagramType,
-  direction,
   sourceText,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -103,7 +101,7 @@ export default function Result({
       const record = await postShareDiagram({
         mermaid: code,
         diagramType: diagramType || 'flowchart',
-        direction,
+        direction: 'auto',
         theme,
         sourceText,
       });

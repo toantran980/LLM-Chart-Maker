@@ -4,8 +4,6 @@ import type { DiagramType, DiagramSuggestionResponse } from '@shared/types';
 interface ControlsProps {
   diagramType: DiagramType;
   setDiagramType: (t: DiagramType) => void;
-  direction: string;
-  setDirection: (d: string) => void;
   onGenerateFull: () => void;
   onGenerateSelection: () => void;
   loadingFull: boolean;
@@ -18,14 +16,6 @@ interface ControlsProps {
   onAcceptSuggestion?: () => void;
   onDismissSuggestion?: () => void;
 }
-
-const DIRECTIONS = [
-  { value: 'auto', label: '✨ Auto' },
-  { value: 'LR', label: '→ Left to Right' },
-  { value: 'RL', label: '← Right to Left' },
-  { value: 'TD', label: '↓ Top to Bottom' },
-  { value: 'BT', label: '↑ Bottom to Top' },
-];
 
 const TYPE_NAMES: Record<DiagramType, string> = {
   flowchart: '📊 Flowchart',
@@ -40,8 +30,6 @@ const TYPE_NAMES: Record<DiagramType, string> = {
 export default function Controls({ 
   diagramType, 
   setDiagramType,
-  direction,
-  setDirection,
   onGenerateFull, 
   onGenerateSelection, 
   loadingFull, 
@@ -54,8 +42,6 @@ export default function Controls({
   onAcceptSuggestion,
   onDismissSuggestion,
 }: ControlsProps) {
-  const showDirection = diagramType === 'flowchart' || diagramType === 'rules';
-
   const handleTypeChange = (newType: DiagramType) => {
     setDiagramType(newType);
     if (suggestion && onDismissSuggestion) {
@@ -113,25 +99,6 @@ export default function Controls({
             />
           )}
         </div>
-
-        {/* Direction Selector */}
-        {showDirection && (
-          <div className="setting-item">
-            <label htmlFor="diagram-direction-select" className="small-section">Direction</label>
-            <select
-              id="diagram-direction-select"
-              value={direction}
-              onChange={(e) => setDirection(e.target.value)}
-              className="modern-select"
-              aria-label="Choose diagram direction"
-            >
-              {DIRECTIONS.map((d) => (
-                <option key={d.value} value={d.value}>{d.label}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
         {/* Generation Actions & File Upload */}
         <div className="setting-item">
           <label className="small-section">Actions</label>

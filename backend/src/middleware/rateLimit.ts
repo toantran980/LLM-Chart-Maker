@@ -33,8 +33,7 @@ function parseEnvInt(name: string, fallback: number): number {
 
 function getRateLimitKey(req: Request): string {
   const ip = req.ip || req.socket.remoteAddress || 'unknown';
-  const apiKey = req.header('x-api-key');
-  return apiKey ? `key:${apiKey.slice(0, 8)}` : `ip:${ip}`;
+  return `ip:${ip}`;
 }
 
 function createUpstashLimiter(max: number, windowMs: number): Ratelimit | null {
@@ -59,6 +58,41 @@ function rateLimitExceededError(resetAtMs: number): ApiError {
   );
 }
 
+function applyInMemoryLimit(
+  req: Request,
+  res: import('express').Response,
+  next: import('express').NextFunction,
+  max: number,
+  windowMs: number,
+): void {
+  pruneExpiredEntries();
+
+  const key = getRateLimitKey(req);
+  const now = Date.now();
+
+  let entry = hits.get(key);
+  if (!entry || now >= entry.resetAt) {
+    entry = { count: 0, resetAt: now + windowMs };
+    hits.set(key, entry);
+  }
+
+  entry.count += 1;
+  const remaining = Math.max(0, max - entry.count);
+  const resetSec = Math.ceil(entry.resetAt / 1000);
+
+  res.setHeader('X-RateLimit-Limit', max);
+  res.setHeader('X-RateLimit-Remaining', remaining);
+  res.setHeader('X-RateLimit-Reset', resetSec);
+
+  if (entry.count > max) {
+    const retrySec = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+    res.setHeader('Retry-After', retrySec);
+    return next(rateLimitExceededError(entry.resetAt));
+  }
+
+  next();
+}
+
 export function createLlmRateLimiter(): RequestHandler {
   const windowMs = parseEnvInt('RATE_LIMIT_WINDOW_MS', DEFAULT_RATE_LIMIT_WINDOW_MS);
   const max = parseEnvInt('RATE_LIMIT_MAX', DEFAULT_RATE_LIMIT_MAX);
@@ -81,7 +115,10 @@ export function createLlmRateLimiter(): RequestHandler {
         }
         next();
       } catch (err) {
-        next(err);
+        log('warn', 'Upstash rate limiter unavailable; falling back to in-memory limiting', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        applyInMemoryLimit(req, res, next, max, windowMs);
       }
     };
   }
@@ -89,32 +126,7 @@ export function createLlmRateLimiter(): RequestHandler {
   log('info', 'rate limiting via in-memory store', { max, windowMs });
 
   return (req, res, next) => {
-    pruneExpiredEntries();
-
-    const key = getRateLimitKey(req);
-    const now = Date.now();
-
-    let entry = hits.get(key);
-    if (!entry || now >= entry.resetAt) {
-      entry = { count: 0, resetAt: now + windowMs };
-      hits.set(key, entry);
-    }
-
-    entry.count += 1;
-    const remaining = Math.max(0, max - entry.count);
-    const resetSec = Math.ceil(entry.resetAt / 1000);
-
-    res.setHeader('X-RateLimit-Limit', max);
-    res.setHeader('X-RateLimit-Remaining', remaining);
-    res.setHeader('X-RateLimit-Reset', resetSec);
-
-    if (entry.count > max) {
-      const retrySec = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
-      res.setHeader('Retry-After', retrySec);
-      return next(rateLimitExceededError(entry.resetAt));
-    }
-
-    next();
+    applyInMemoryLimit(req, res, next, max, windowMs);
   };
 }
 
