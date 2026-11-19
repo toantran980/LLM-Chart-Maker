@@ -86,6 +86,19 @@ describe('Ollama provider', () => {
     expect(post.mock.calls[0][2]).toMatchObject({ headers: { Authorization: 'Bearer test-key' } });
   });
 
+  it('asks the LLM to choose from Mermaid types in auto mode', async () => {
+    const post = vi.spyOn(axios, 'post').mockResolvedValue({
+      data: { message: { content: '```mermaid\nsequenceDiagram\nAlice->>Bob: Hello\n```' } },
+    });
+    const res = await request(createApp())
+      .post('/api/diagram')
+      .send({ text: 'Alice sends Bob a message', diagramType: 'auto' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.mermaid).toContain('sequenceDiagram');
+    expect(post.mock.calls[0][1].messages[1].content).toContain("You are not limited to this app's type picker");
+  });
+
   it('rejects invalid provider configuration', () => {
     vi.stubEnv('LLM_PROVIDER', 'ollmaa');
     expect(() => createApp()).toThrow('Invalid LLM_PROVIDER');

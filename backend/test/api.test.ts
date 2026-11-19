@@ -131,6 +131,18 @@ describe('API', () => {
     expect(res.body.mermaid).toContain('flowchart TD');
   });
 
+  it('POST /api/diagram accepts auto chart type', async () => {
+    const app = createApp();
+    vi.spyOn(diagramModule, 'generateDiagram').mockResolvedValue('sequenceDiagram\nAlice->>Bob: Hello');
+
+    const res = await request(app)
+      .post('/api/diagram')
+      .send({ text: 'Alice sends Bob a message', diagramType: 'auto' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.mermaid).toContain('sequenceDiagram');
+  });
+
   it('POST /api/refine returns refined diagram', async () => {
     const app = createApp();
     vi.spyOn(diagramModule, 'refineDiagram').mockResolvedValue('```mermaid\nflowchart TD\nA --> B\n```');

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { DiagramRequest, DiagramType } from '../../shared/types';
+import type { DiagramRequest, DiagramType, DiagramTypeOption } from '../../shared/types';
 import { ApiError } from './errors';
 import { DEFAULT_LLM_TIMEOUT_MS } from './limits';
 import { log } from './logger';
@@ -95,7 +95,10 @@ function buildPrompt(req: DiagramRequest & { direction?: string }) {
 
   // Direction instruction block: either tell LLM to choose, or force the user's pick
   const noDirectionTypes = ['timeline', 'gantt', 'er', 'mindmap', 'gitgraph'];
-  const directionRule = noDirectionTypes.includes(diagramType)
+  const directionRule = diagramType === 'auto'
+    ? `- Choose the most suitable valid Mermaid diagram type for the input. You are not limited to this app's type picker. Use any diagram syntax supported by Mermaid, such as flowchart, sequenceDiagram, classDiagram, stateDiagram-v2, erDiagram, gantt, mindmap, pie, quadrantChart, requirementDiagram, gitGraph, timeline, or other supported types.
+- If you choose a flowchart, select the direction that best fits the content.`
+    : noDirectionTypes.includes(diagramType)
   ? `- No directional layout applies. Use the correct Mermaid keyword for "${diagramType}" (e.g. "gantt", "erDiagram", "mindmap", "gitGraph") and omit any direction.`
   : isAuto
     ? `- Choose the direction that best fits the content, then open with "flowchart <direction>":
@@ -106,7 +109,9 @@ function buildPrompt(req: DiagramRequest & { direction?: string }) {
     : `- Direction is fixed by the user: "${direction}". Always output "flowchart ${direction}", even another direction seems better.`;
 
   const directive = `
-  Convert the input below into a Mermaid ${diagramType} diagram.
+  ${diagramType === 'auto'
+    ? 'Convert the input below into the most suitable Mermaid diagram.'
+    : `Convert the input below into a Mermaid ${diagramType} diagram.`}
 
   Output rules:
   - Return ONLY one fenced Mermaid block, nothing else (no prose, no headers):
@@ -127,8 +132,9 @@ function buildPrompt(req: DiagramRequest & { direction?: string }) {
   return `${userInstruction}${directive}`.trim();
 }
 
-function buildRefinePrompt(req: { currentDiagram: string; instruction: string; diagramType: DiagramType }) {
-  return `Update the Mermaid ${req.diagramType} diagram below according to the user's instruction. Return ONLY a single fenced Mermaid block, nothing else.
+function buildRefinePrompt(req: { currentDiagram: string; instruction: string; diagramType: DiagramTypeOption }) {
+  const diagramKind = req.diagramType === 'auto' ? 'diagram below, preserving its current type' : `${req.diagramType} diagram below`;
+  return `Update the Mermaid ${diagramKind} according to the user's instruction. Return ONLY a single fenced Mermaid block, nothing else.
 
 User instruction: ${req.instruction}
 
@@ -159,7 +165,7 @@ export async function generateDiagramWithLLM(req: DiagramRequest): Promise<strin
   ]);
 }
 
-export async function refineDiagramWithLLM(req: { currentDiagram: string; instruction: string; diagramType: DiagramType }): Promise<string> {
+export async function refineDiagramWithLLM(req: { currentDiagram: string; instruction: string; diagramType: DiagramTypeOption }): Promise<string> {
   return requestLLM([
     { role: 'system', content: 'You are a precise Mermaid diagram editor. You only output valid Mermaid code within markdown blocks.' },
     { role: 'user', content: buildRefinePrompt(req) },

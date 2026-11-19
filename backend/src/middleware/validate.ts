@@ -1,5 +1,5 @@
 import type { RequestHandler } from 'express';
-import type { DiagramType } from '../../../shared/types';
+import type { DiagramTypeOption } from '../../../shared/types';
 import { ApiError } from '../errors';
 import {
   MAX_ERROR_LENGTH,
@@ -8,7 +8,7 @@ import {
   MAX_TEXT_LENGTH,
   MAX_TITLE_LENGTH,
   MAX_THEME_LENGTH,
-  VALID_DIAGRAM_TYPES,
+  VALID_DIAGRAM_TYPE_OPTIONS,
   VALID_DIRECTIONS,
 } from '../limits';
 
@@ -49,13 +49,13 @@ function requireOptionalString(
   return value;
 }
 
-function requireDiagramType(body: Record<string, unknown>, details: Record<string, string>): DiagramType | null {
+function requireDiagramType(body: Record<string, unknown>, details: Record<string, string>): DiagramTypeOption | null {
   const value = body.diagramType;
-  if (typeof value !== 'string' || !VALID_DIAGRAM_TYPES.includes(value as DiagramType)) {
-    details.diagramType = `Must be one of: ${VALID_DIAGRAM_TYPES.join(', ')}`;
+  if (typeof value !== 'string' || !VALID_DIAGRAM_TYPE_OPTIONS.includes(value as DiagramTypeOption)) {
+    details.diagramType = `Must be one of: ${VALID_DIAGRAM_TYPE_OPTIONS.join(', ')}`;
     return null;
   }
-  return value as DiagramType;
+  return value as DiagramTypeOption;
 }
 
 function validateDirection(body: Record<string, unknown>, details: Record<string, string>): boolean {

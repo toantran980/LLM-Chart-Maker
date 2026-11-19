@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { DiagramType } from '@shared/types';
+import type { DiagramTypeOption } from '@shared/types';
 
 import PDFWorker from 'pdfjs-dist/build/pdf.worker.mjs?worker';
 import 'pdfjs-dist/web/pdf_viewer.css';
@@ -27,8 +27,8 @@ pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
 interface PDFViewerProps {
   file: File | null;
   onClose: () => void;
-  requestDiagram: (payload: { text: string; diagramType: DiagramType }, which: 'full' | 'selection') => void;
-  diagramType: DiagramType;
+  requestDiagram: (payload: { text: string; diagramType: DiagramTypeOption }, which: 'full' | 'selection') => void;
+  diagramType: DiagramTypeOption;
 }
 
 export default function PDFViewer({

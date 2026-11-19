@@ -1,4 +1,4 @@
-import type { DiagramType } from '../../shared/types';
+import type { DiagramType, DiagramTypeOption } from '../../shared/types';
 
 export const MAX_TEXT_LENGTH = 15_000;
 export const MAX_INSTRUCTION_LENGTH = 2_000;
@@ -15,6 +15,10 @@ export const VALID_DIAGRAM_TYPES: readonly DiagramType[] = [
   'er',
   'mindmap',
   'gitgraph',
+];
+export const VALID_DIAGRAM_TYPE_OPTIONS: readonly DiagramTypeOption[] = [
+  'auto',
+  ...VALID_DIAGRAM_TYPES,
 ];
 
 export const VALID_DIRECTIONS = ['auto'] as const;

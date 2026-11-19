@@ -1,5 +1,5 @@
 import type {
-  DiagramType,
+  DiagramTypeOption,
   DiagramSuggestionResponse,
   ShareDiagramRequest,
   SharedDiagramResponse,
@@ -10,7 +10,7 @@ export function getApiBase(): string {
   return (configuredBase ?? '').replace(/\/$/, '');
 }
 
-export type DiagramPayload = { text: string; diagramType: DiagramType; direction?: string; instruction?: string };
+export type DiagramPayload = { text: string; diagramType: DiagramTypeOption; direction?: string; instruction?: string };
 
 function getApiHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -41,7 +41,7 @@ export function postDiagram(payload: DiagramPayload) {
   return postJson('/api/diagram', payload);
 }
 
-export function postRefine(payload: { currentDiagram: string; instruction: string; diagramType: DiagramType }) {
+export function postRefine(payload: { currentDiagram: string; instruction: string; diagramType: DiagramTypeOption }) {
   return postJson('/api/refine', payload);
 }
 

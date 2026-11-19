@@ -28,4 +28,16 @@ describe('generateDiagram', () => {
     expect(result).toMatch(/flowchart TD/);
     expect(result).toMatch(/-->/);
   });
+
+  it('uses the bounded type suggestion when auto mode falls back', async () => {
+    vi.spyOn(llmModule, 'generateDiagramWithLLM').mockRejectedValue(new Error('API down'));
+
+    const result = await generateDiagram({
+      text: 'if user is admin, then grant access, else deny access',
+      diagramType: 'auto',
+    });
+
+    expect(result).toContain('Yes -->');
+    expect(result).toContain('No -->');
+  });
 });

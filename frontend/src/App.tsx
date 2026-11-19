@@ -14,7 +14,7 @@ import { saveHistoryEntry, type HistoryEntry } from './utils/history';
 import { useBackendHealth } from './hooks/useBackendHealth';
 import { normalizeFlowchartDirection, loadSavedTheme, saveTheme } from './utils/diagram';
 
-import type { DiagramType, DiagramSuggestionResponse } from '@shared/types';
+import type { DiagramTypeOption, DiagramSuggestionResponse } from '@shared/types';
 
 /**
  * Main application component definition
@@ -24,7 +24,7 @@ import type { DiagramType, DiagramSuggestionResponse } from '@shared/types';
 export default function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [text, setText] = useState<string>('');
-  const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
+  const [diagramType, setDiagramType] = useState<DiagramTypeOption>('auto');
   const direction = 'auto';
   const [theme, setTheme] = useState<string>(() => loadSavedTheme() ?? 'base');
   const [mermaid, setMermaid] = useState<string>('');
@@ -36,7 +36,7 @@ export default function App() {
   const [loadingSuggest, setLoadingSuggest] = useState(false);
   const [suggestion, setSuggestion] = useState<DiagramSuggestionResponse | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
-  const [failedDiagramRequest, setFailedDiagramRequest] = useState<{ payload: { text: string; diagramType: DiagramType; direction?: string }; which: 'full' | 'selection' } | null>(null);
+  const [failedDiagramRequest, setFailedDiagramRequest] = useState<{ payload: { text: string; diagramType: DiagramTypeOption; direction?: string }; which: 'full' | 'selection' } | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const editableRef = useRef<HTMLDivElement>(null);
   const selection = useSelection(editableRef);
@@ -100,7 +100,7 @@ export default function App() {
     }
   }
 
-  const requestDiagram = useCallback(async (payload: { text: string; diagramType: DiagramType; direction?: string }, which: 'full' | 'selection') => {
+  const requestDiagram = useCallback(async (payload: { text: string; diagramType: DiagramTypeOption; direction?: string }, which: 'full' | 'selection') => {
     const trimmedText = payload.text?.trim();
     if (!trimmedText) {
       setMermaid('');
@@ -254,13 +254,10 @@ export default function App() {
     <div className="app">
       <header aria-labelledby="app-title" className="app-header">
         <div className="header-text">
-          <h1 id="app-title">Chart Maker</h1>
+          <h1 id="app-title">AI Diagram Maker</h1>
           <p className="main-subheading">
             Transform your text into beautiful diagrams using AI.
             {fallbackMode && <span style={{ color: '#f59e0b', fontWeight: 'bold' }}> (Local Parser)</span>}
-          </p>
-          <p className="shortcut-note">
-            Keyboard shortcuts: <strong>Ctrl/Cmd+Enter</strong> for full generation, <strong>Ctrl/Cmd+Shift+Enter</strong> for selection.
           </p>
         </div>
         <button className="mode-toggle-btn" onClick={() => setDarkMode(!darkMode)} aria-pressed={darkMode}>

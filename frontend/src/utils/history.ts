@@ -1,10 +1,10 @@
-import type { DiagramType } from '@shared/types';
+import type { DiagramTypeOption } from '@shared/types';
 
 export interface HistoryEntry {
   id: string;
   title?: string;
   mermaid: string;
-  diagramType: DiagramType;
+  diagramType: DiagramTypeOption;
   direction?: string;
   theme?: string;
   sourceText?: string;

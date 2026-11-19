@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import Mermaid from '../Mermaid';
 import CodeEditor from './CodeEditor';
 import { extractMermaidCode } from '../utils/mermaid';
-import type { DiagramType } from '@shared/types';
+import type { DiagramTypeOption } from '@shared/types';
 import { postDescribe, postFix, postShareDiagram } from '../utils/api';
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
   setMermaid: (val: string) => void;
   theme?: string;
   setTheme?: (theme: string) => void;
-  diagramType?: DiagramType;
+  diagramType?: DiagramTypeOption;
   sourceText?: string;
 }
 

@@ -142,7 +142,7 @@ export const openApiSpec = {
         type: 'object',
         required: ['text'],
         properties: {
-          diagramType: { type: 'string', enum: ['flowchart', 'gantt', 'timeline', 'er', 'gitgraph', 'mindmap', 'rules'] },
+          diagramType: { type: 'string', enum: ['auto', 'flowchart', 'gantt', 'timeline', 'er', 'gitgraph', 'mindmap', 'rules'] },
           direction: { type: 'string', enum: ['auto'], default: 'auto' },
           text: { type: 'string' },
         },
@@ -153,7 +153,7 @@ export const openApiSpec = {
         properties: {
           currentDiagram: { type: 'string' },
           instruction: { type: 'string' },
-          diagramType: { type: 'string' },
+          diagramType: { type: 'string', enum: ['auto', 'flowchart', 'gantt', 'timeline', 'er', 'gitgraph', 'mindmap', 'rules'] },
         },
       },
       FixRequest: {
@@ -184,7 +184,7 @@ export const openApiSpec = {
         required: ['mermaid', 'diagramType'],
         properties: {
           mermaid: { type: 'string', maxLength: 20000 },
-          diagramType: { type: 'string', enum: ['flowchart', 'gantt', 'timeline', 'er', 'gitgraph', 'mindmap', 'rules'] },
+          diagramType: { type: 'string', enum: ['auto', 'flowchart', 'gantt', 'timeline', 'er', 'gitgraph', 'mindmap', 'rules'] },
           title: { type: 'string', maxLength: 255 },
           direction: { type: 'string', enum: ['auto'], default: 'auto' },
           theme: { type: 'string', maxLength: 64 },

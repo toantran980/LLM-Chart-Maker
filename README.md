@@ -34,6 +34,7 @@ Live App: https://llm-chart-maker-frontend.vercel.app/
 - Generate from all editor text, a text selection, highlighted text, a PDF selection, or an entire PDF
 - Choose an automatic, left-to-right, right-to-left, top-to-bottom, or bottom-to-top layout where supported
 - Auto-suggest the best diagram type from your input text
+- Choose **Auto (AI chooses)** to let the LLM select any Mermaid diagram type supported by the renderer; local fallback mode remains limited to the built-in diagram types
 - Refine a diagram with natural-language instructions and request a plain-language description
 - Edit Mermaid source in the app, then copy the code or an embeddable SVG snippet
 - Share diagrams via unique URLs (`?share=<id>`) backed by Neon Postgres

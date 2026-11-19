@@ -1,9 +1,9 @@
 import FileUpload from '../FileUpload';
-import type { DiagramType, DiagramSuggestionResponse } from '@shared/types';
+import type { DiagramTypeOption, DiagramSuggestionResponse } from '@shared/types';
 
 interface ControlsProps {
-  diagramType: DiagramType;
-  setDiagramType: (t: DiagramType) => void;
+  diagramType: DiagramTypeOption;
+  setDiagramType: (t: DiagramTypeOption) => void;
   onGenerateFull: () => void;
   onGenerateSelection: () => void;
   loadingFull: boolean;
@@ -17,7 +17,8 @@ interface ControlsProps {
   onDismissSuggestion?: () => void;
 }
 
-const TYPE_NAMES: Record<DiagramType, string> = {
+const TYPE_NAMES: Record<DiagramTypeOption, string> = {
+  auto: '✨ Auto (AI chooses)',
   flowchart: '📊 Flowchart',
   timeline: '⏳ Timeline',
   rules: '🛡️ Rules Map',
@@ -42,7 +43,7 @@ export default function Controls({
   onAcceptSuggestion,
   onDismissSuggestion,
 }: ControlsProps) {
-  const handleTypeChange = (newType: DiagramType) => {
+  const handleTypeChange = (newType: DiagramTypeOption) => {
     setDiagramType(newType);
     if (suggestion && onDismissSuggestion) {
       onDismissSuggestion();
@@ -79,7 +80,7 @@ export default function Controls({
           <select
             id="diagram-type-select"
             value={diagramType}
-            onChange={(e) => handleTypeChange(e.target.value as DiagramType)}
+            onChange={(e) => handleTypeChange(e.target.value as DiagramTypeOption)}
             className="modern-select"
             aria-label="Choose diagram type"
           >
@@ -133,7 +134,7 @@ export default function Controls({
 
 interface BannerProps {
   suggestion: DiagramSuggestionResponse;
-  currentType: DiagramType;
+  currentType: DiagramTypeOption;
   onAccept?: () => void;
   onDismiss?: () => void;
 }
